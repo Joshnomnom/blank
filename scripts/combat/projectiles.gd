@@ -16,6 +16,7 @@ var _pos := PackedVector3Array()
 var _vel := PackedVector3Array()
 var _life := PackedFloat32Array()
 var _damage := PackedFloat32Array()
+var _dtype := PackedInt32Array()
 var _mm: MultiMesh
 var _tracer_mat: StandardMaterial3D
 var _sparks: Array[CPUParticles3D] = []
@@ -55,13 +56,14 @@ func set_tracer_color(color: Color) -> void:
 	_tracer_mat.albedo_color = color
 
 
-func spawn(origin: Vector3, velocity: Vector3, damage: float, lifetime: float) -> void:
+func spawn(origin: Vector3, velocity: Vector3, damage: float, lifetime: float, damage_type: int = 0) -> void:
 	if _pos.size() >= max_bullets:
 		_remove(0)
 	_pos.append(origin)
 	_vel.append(velocity)
 	_life.append(lifetime)
 	_damage.append(damage)
+	_dtype.append(damage_type)
 
 
 func _physics_process(delta: float) -> void:
@@ -74,7 +76,7 @@ func _physics_process(delta: float) -> void:
 		var query := PhysicsRayQueryParameters3D.create(from, to, 3, exclude)
 		var hit := space.intersect_ray(query)
 		if not hit.is_empty():
-			_on_hit(hit, _damage[i])
+			_on_hit(hit, _damage[i], _dtype[i])
 			_remove(i)
 			continue
 		_pos[i] = to
@@ -86,7 +88,7 @@ func _physics_process(delta: float) -> void:
 	_update_tracers()
 
 
-func _on_hit(hit: Dictionary, damage: float) -> void:
+func _on_hit(hit: Dictionary, damage: float, damage_type: int) -> void:
 	var collider: Object = hit["collider"]
 	var hit_pos: Vector3 = hit["position"]
 	var normal: Vector3 = hit["normal"]
@@ -95,7 +97,7 @@ func _on_hit(hit: Dictionary, damage: float) -> void:
 	if not target.has_method("take_damage") and collider is Node:
 		target = (collider as Node).get_parent()
 	if target and target.has_method("take_damage"):
-		target.call("take_damage", damage, hit_pos)
+		target.call("take_damage", damage, hit_pos, damage_type)
 		_play(_sparks, _next_spark, hit_pos, normal)
 		_next_spark = (_next_spark + 1) % _sparks.size()
 		return
@@ -116,6 +118,7 @@ func _remove(i: int) -> void:
 	_vel.remove_at(i)
 	_life.remove_at(i)
 	_damage.remove_at(i)
+	_dtype.remove_at(i)
 
 
 func _update_tracers() -> void:

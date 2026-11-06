@@ -1,14 +1,17 @@
 class_name TargetDummy
 extends StaticBody3D
-## Training target for Phase 2. A scrap-metal dummy on a post with a Health component.
-## On hit: white flash + floating damage number + health bar (billboard shader).
+## Training target. A scrap-metal dummy on a post with a Health component and an ARMOR TYPE.
+## Damage taken = damage × DamageTypes.multiplier(damage_type, armor_type).
+## - LIGHT: rusty, thin. HEAVY: steel-blue with extra armor plates.
+## - An armor label floats above it so players learn to read enemies and swap guns.
+## On hit: white flash + damage number (golden orange if effective) + health bar.
 ## On death: burst of sparks, disappears, respawns after respawn_time with full HP.
-## Solid (physics layer 1): the car bumps into it and bullets hit it.
+## Solid (physics layer 1): the car bumps into it and bullets/explosions hit it.
 ## In group "targets" for the weapon aim assist.
 
 @export var max_hp: float = 300.0
 @export var respawn_time: float = 4.0
-@export var body_color: Color = Color(0.55, 0.38, 0.25)
+@export var armor_type: DamageTypes.Armor = DamageTypes.Armor.LIGHT
 
 const BAR_SHADER := """
 shader_type spatial;
@@ -39,6 +42,7 @@ var _visual: Node3D
 var _flash_mats: Array[StandardMaterial3D] = []
 var _bar: MeshInstance3D
 var _bar_mat: ShaderMaterial
+var _armor_label: Label3D
 var _collision: CollisionShape3D
 var _burst: CPUParticles3D
 var _flash_tween: Tween
@@ -63,20 +67,26 @@ func get_aim_point() -> Vector3:
 	return global_position + Vector3.UP * 1.6
 
 
-func take_damage(amount: float, at: Vector3) -> void:
-	health.take_damage(amount, at)
+func get_armor_type() -> int:
+	return armor_type
 
 
-func _on_damaged(amount: float, at: Vector3) -> void:
-	DamageNumber.spawn(get_tree().current_scene, at + Vector3.UP * 0.3, amount)
+func take_damage(amount: float, at: Vector3, damage_type: int = DamageTypes.Type.KINETIC) -> void:
+	var mult := DamageTypes.multiplier(damage_type, armor_type)
+	health.take_damage(amount * mult, at, mult)
+
+
+func _on_damaged(amount: float, at: Vector3, effectiveness: float) -> void:
+	DamageNumber.spawn(get_tree().current_scene, at + Vector3.UP * 0.3, amount, effectiveness)
 	_bar.visible = true
 	_bar_mat.set_shader_parameter("ratio", health.ratio())
 
-	# White hit flash.
+	# White hit flash (stronger when the hit is effective).
 	if _flash_tween:
 		_flash_tween.kill()
+	var strength := 1.8 if DamageTypes.is_effective(effectiveness) else 1.2
 	for mat in _flash_mats:
-		mat.emission_energy_multiplier = 1.2
+		mat.emission_energy_multiplier = strength
 	_flash_tween = create_tween()
 	_flash_tween.set_parallel(true)
 	for mat in _flash_mats:
@@ -89,6 +99,7 @@ func _on_died() -> void:
 	_burst.emitting = true
 	_visual.visible = false
 	_bar.visible = false
+	_armor_label.visible = false
 	_collision.set_deferred("disabled", true)
 	get_tree().create_timer(respawn_time).timeout.connect(_respawn)
 
@@ -96,6 +107,7 @@ func _on_died() -> void:
 func _respawn() -> void:
 	health.reset()
 	_visual.visible = true
+	_armor_label.visible = true
 	_collision.set_deferred("disabled", false)
 	_bar_mat.set_shader_parameter("ratio", 1.0)
 
@@ -104,8 +116,10 @@ func _build() -> void:
 	_visual = Node3D.new()
 	add_child(_visual)
 
+	var heavy := armor_type == DamageTypes.Armor.HEAVY
 	var post_mat := _make_mat(Color(0.3, 0.3, 0.32))
-	var body_mat := _make_mat(body_color)
+	var body_mat := _make_mat(Color(0.42, 0.48, 0.58) if heavy else Color(0.55, 0.38, 0.25))
+	var plate_mat := _make_mat(Color(0.28, 0.32, 0.38))
 	var accent_mat := _make_mat(Color(0.95, 0.75, 0.15))
 
 	var post := CylinderMesh.new()
@@ -122,14 +136,25 @@ func _build() -> void:
 	head.size = Vector3(0.55, 0.45, 0.5)
 	_add_mesh(head, Vector3(0.0, 2.25, 0.0), body_mat)
 
-	# Yellow target stripes so it reads as a training target.
-	var stripe := BoxMesh.new()
-	stripe.size = Vector3(1.12, 0.12, 0.62)
-	_add_mesh(stripe, Vector3(0.0, 1.35, 0.0), accent_mat)
-	_add_mesh(stripe, Vector3(0.0, 1.7, 0.0), accent_mat)
+	if heavy:
+		# Thick armor plates front/back + shoulder plates.
+		var plate := BoxMesh.new()
+		plate.size = Vector3(1.25, 0.9, 0.12)
+		_add_mesh(plate, Vector3(0.0, 1.5, 0.36), plate_mat)
+		_add_mesh(plate, Vector3(0.0, 1.5, -0.36), plate_mat)
+		var shoulder := BoxMesh.new()
+		shoulder.size = Vector3(0.35, 0.25, 0.75)
+		_add_mesh(shoulder, Vector3(0.68, 1.95, 0.0), plate_mat)
+		_add_mesh(shoulder, Vector3(-0.68, 1.95, 0.0), plate_mat)
+	else:
+		# Yellow target stripes.
+		var stripe := BoxMesh.new()
+		stripe.size = Vector3(1.12, 0.12, 0.62)
+		_add_mesh(stripe, Vector3(0.0, 1.35, 0.0), accent_mat)
+		_add_mesh(stripe, Vector3(0.0, 1.7, 0.0), accent_mat)
 
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(1.2, 2.5, 0.8)
+	shape.size = Vector3(1.3 if heavy else 1.2, 2.5, 0.9 if heavy else 0.8)
 	_collision = CollisionShape3D.new()
 	_collision.shape = shape
 	_collision.position = Vector3(0.0, 1.25, 0.0)
@@ -149,6 +174,17 @@ func _build() -> void:
 	_bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_bar.visible = false
 	add_child(_bar)
+
+	# Armor type label (always visible, color coded).
+	_armor_label = Label3D.new()
+	_armor_label.text = DamageTypes.ARMOR_NAMES[armor_type]
+	_armor_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_armor_label.pixel_size = 0.008
+	_armor_label.font_size = 40
+	_armor_label.outline_size = 10
+	_armor_label.modulate = DamageTypes.ARMOR_COLORS[armor_type]
+	_armor_label.position = Vector3(0.0, 3.25, 0.0)
+	add_child(_armor_label)
 
 	# Death burst.
 	_burst = CPUParticles3D.new()

@@ -259,20 +259,25 @@ func _add_road_overlay(rect: Rect2, y: float, center_line: bool) -> void:
 # --------------------------------------------------------------------------
 
 func _spawn_targets() -> void:
-	# [x, z, max_hp]. Placed off the roads, on sand near the start pad.
+	# [x, z, max_hp, armor]. Placed off the roads, on sand near the start pad.
+	var light := DamageTypes.Armor.LIGHT
+	var heavy := DamageTypes.Armor.HEAVY
 	var targets := [
-		[-25.0, 115.0, 300.0],
-		[25.0, 112.0, 300.0],
-		[-35.0, 85.0, 300.0],
-		[30.0, 70.0, 300.0],
-		[-20.0, 55.0, 300.0],
-		[-60.0, 125.0, 2000.0],  # tanky one, for testing sustained fire
+		[-25.0, 115.0, 300.0, light],
+		[25.0, 112.0, 300.0, heavy],
+		[-35.0, 85.0, 300.0, light],
+		[30.0, 70.0, 300.0, heavy],
+		[-20.0, 55.0, 300.0, light],
+		[-60.0, 125.0, 2000.0, heavy],  # tanky one, for testing sustained fire
+		# Tight group of light dummies: test rocket splash damage.
+		[40.0, 128.0, 300.0, light],
+		[44.5, 131.0, 300.0, light],
+		[37.0, 133.0, 300.0, light],
 	]
 	for t in targets:
 		var dummy := TargetDummy.new()
 		dummy.max_hp = t[2]
-		if t[2] > 1000.0:
-			dummy.body_color = Color(0.35, 0.4, 0.5)
+		dummy.armor_type = t[3]
 		add_child(dummy)
 		dummy.position = Vector3(t[0], _height(t[0], t[1]), t[1])
 

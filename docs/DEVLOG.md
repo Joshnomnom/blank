@@ -12,9 +12,9 @@ Related docs: [GAME_DESIGN.md](GAME_DESIGN.md) (overall plan) · [research/](res
 | | |
 |---|---|
 | **Phase** | **2: combat basics** (step 1: one gun). Phases 0 (driving) and 1 (terrain) are done and accepted. |
-| **State** | **Phase 2 step 1 (one gun) is done and accepted** ("it's good now, feels okay"): mouse-aimed roof turret, machine gun, aim assist, target dummies with HP bars, damage numbers. Sound is deferred (backlog). |
-| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 = Phase 2 step 1. **Rule: commit + push after the user accepts a step.** |
-| **Next** | User tests shooting. Then the next combat steps, one at a time: gun skill + cooldown → a 2nd gun + Q/E swap → enemies that move/fight back (Phase 3). |
+| **State** | **Phase 2 step 2 done and accepted ("feels okay now"), committed:** Rocket Launcher (explosive area damage, 1.5 s cooldown) + **Q/E gun swap** (weapon HUD) + **damage types × armor types** (golden-orange numbers and "EFFECTIVE" crosshair when effective; small dim-white numbers and "RESISTED" when resisted) + **crosshair reload ring** + **machine gun overheat** (4 s fire → **~4.1 s penalty lockout** vs ~2.25 s if you stop in time; barrel glow, steam, countdown). Step 1 (machine gun) is accepted and committed. Sound is deferred. |
+| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 = Phase 2 step 1. Commit 3 = Phase 2 step 2. **Rule: commit + push after the user accepts a step.** |
+| **Next** | User to choose: the next attack type (Shotgun → Flamethrower → Railgun…) or Phase 3 enemies. **No gun skills** (log #21). Design reference: [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md). |
 | **Main scene** | `scenes/terrain_test.tscn` (new). The old flat arena `scenes/test_drive.tscn` still works (car uses "road" grip there). |
 | **After that** | Phase 2, combat basics (one weapon, a dummy target). The car model is planned around Phase 2–3, when weapon mounts need a real shape. |
 | **Research** | [research/CAR_PHYSICS_RESEARCH.md](research/CAR_PHYSICS_RESEARCH.md) (physics math; §8 surfaces) · [research/DRIVING_GAME_FEEL.md](research/DRIVING_GAME_FEEL.md) (game feel, Driving v2 design) · [research/VEHICLE_GROUND_PHYSICS.md](research/VEHICLE_GROUND_PHYSICS.md) (ground-following approaches, pitfalls, our bug, decision to keep kinematic + rays) |
@@ -39,7 +39,8 @@ Related docs: [GAME_DESIGN.md](GAME_DESIGN.md) (overall plan) · [research/](res
 | A, D / ←, → | Left stick | Steer. In a drift: into the corner = wider angle, counter-steer = straighten/exit. In the air: small yaw control. |
 | Space | A | Handbrake (+ steer at speed = drift) |
 | Mouse | | Aim the roof turret (crosshair turns red when aim assist locks a target) |
-| LMB (hold) | | Fire machine gun |
+| LMB (hold) | | Fire the current gun |
+| Q / E | LB / RB | Previous / next gun (0.35 s swap) |
 | ESC | | Show/hide the mouse cursor (firing is disabled while the cursor is shown) |
 | R | Back | Reset car to spawn |
 | M | | Mute / unmute sound |
@@ -90,14 +91,18 @@ scripts/
   vehicles/skid_marks.gd       class SkidMarks: fading skid marks (MultiMesh ring buffer + shader, color per surface)
   vehicles/car_audio.gd        synthesized engine / tire scrub / road squeal / wind (AudioStreamGenerator)
   camera/chase_camera.gd       class ChaseCamera: third-person chase, continuous drift/speed effects, impact shake
-  combat/weapon_controller.gd  class WeaponController ("Weapons" node on the car): mouse aim, aim assist, firing, HUD
-  combat/weapon_data.gd        class WeaponData (Resource): gun stats (+ planned skill fields); make_machine_gun()
-  combat/turret.gd             class Turret: roof turret mesh, yaw/pitch toward the aim point, recoil, muzzle flash
-  combat/projectiles.gd        class Projectiles: data-driven bullets (segment raycasts), MultiMesh tracers, impact sparks/dust
+  combat/weapon_controller.gd  class WeaponController ("Weapons" node on the car): guns list, Q/E swap, per-gun cooldowns, mouse aim, aim assist + effectiveness, firing, HUD
+  combat/weapon_data.gd        class WeaponData (Resource): gun stats, Kind (BULLET/ROCKET), damage_type, explosion; make_machine_gun(), make_rocket_launcher()
+  combat/damage_types.gd       class DamageTypes: damage type × armor type multiplier table, names, colors
+  combat/turret.gd             class Turret: roof turret, one gun model per Kind (MG barrel / rocket pod), swap pop-in, yaw/pitch aim, recoil, muzzle flash
+  combat/projectiles.gd        class Projectiles: data-driven bullets (segment raycasts, damage type), MultiMesh tracers, impact sparks/dust
+  combat/rocket.gd             class Rocket: one rocket node (raycast flight, smoke trail) → Explosion
+  combat/explosion.gd          class Explosion: reusable area damage (sphere query, falloff) + flash/fireball/smoke/light + camera shake
   combat/health.gd             class Health: reusable HP component (damaged / died signals)
   combat/target_dummy.gd       class TargetDummy: training target (HP bar shader, hit flash, death burst, respawn)
   combat/damage_number.gd      class DamageNumber: floating Label3D damage numbers
-  ui/crosshair.gd              class Crosshair: crosshair drawn at the mouse (red when locked)
+  ui/crosshair.gd              class Crosshair: crosshair at the mouse; locked = red, EFFECTIVE = gold + label, RESISTED = grey + label
+  ui/weapon_hud.gd             class WeaponHUD: bottom-right gun slots (current highlighted, damage type, cooldown overlay, Q/E hints, swap bar)
   world/surfaces.gd            class Surfaces: road / dirt / sand property table
   world/world_builder.gd       class WorldBuilder: shared static helpers (sky, sun, fog, grid material, walls, poles, landmarks)
   world/terrain_test.gd        Phase 1 terrain area: heightmap dunes and hills, roads, skidpad, dirt, ramps, surface map
@@ -204,6 +209,24 @@ Also: dust colour (road light grey, dirt brown, sand tan) and skid colour index 
 - **Targets placed** in terrain_test (`_spawn_targets`, on sand around the start, height from `_height`): 5 × 300 HP at (−25,115), (25,112), (−35,85), (30,70), (−20,55), and a tanky blue-grey one with 2000 HP at (−60,125).
 - No gun sound yet (sound is deferred).
 
+### Combat, Phase 2 step 2: Rocket Launcher, Q/E swap, damage × armor types
+- **Damage types × armor types** (`damage_types.gd`, multiplier on damage):
+  | dmg \ armor | LIGHT | HEAVY | SHIELDED | ORGANIC |
+  |---|---|---|---|---|
+  | KINETIC (MG) | **1.25** | 0.60 | 0.80 | 1.00 |
+  | EXPLOSIVE (rocket) | 1.00 | **1.30** | 0.80 | 1.00 |
+  | FIRE (planned) | 1.00 | 0.70 | 0.60 | **1.50** |
+  | ENERGY (planned) | 0.80 | 1.00 | **1.50** | 0.90 |
+  Effective = multiplier > 1.05, resisted = < 0.95. Targets apply it in `take_damage(amount, at, damage_type)`, then `Health.take_damage(final, at, multiplier)`.
+- **Feedback:** damage numbers are **golden orange (1.0, 0.68, 0.12), big (84 px), with a pop scale** when effective; white (64 px) when normal; **dim white (50 px)** when resisted. The crosshair, when locked on a target, turns **gold + "EFFECTIVE"**, red (normal), or **grey + "RESISTED"** for the *current* gun. Dummies show a colored armor label ("LIGHT ARMOR" tan, "HEAVY ARMOR" steel blue) above them. The hit flash is stronger on effective hits.
+- **Rocket Launcher** (`make_rocket_launcher`): EXPLOSIVE, 90 dmg at the center, 1 shot per 1.5 s, rocket 60 m/s, range 150 m (then it explodes), spread 0.3°, **explosion radius 6 m, linear falloff to 40% at the edge**. `Rocket` node: segment raycast per tick (mask 3, excluding the shooter), explodes 0.2 m off the hit surface; body + exhaust glow + smoke trail (lingers 0.7 s after the explosion).
+- **Explosion** (reusable): sphere shape query (layer 1, ≤32 results), each damageable hit once, distance measured to its `get_aim_point()`. Visuals: transparent flash sphere growing to 0.85 × radius in 0.22 s and fading, OmniLight flash (energy 6 → 0 in 0.35 s), fireball (22 particles) + smoke (14), shrink curves (no vertex colors). Camera shake via `ChaseCamera.add_trauma()` scaled by distance (0 beyond 45 m). Frees itself after 1.6 s. Its **position is set before add_child**, because the damage query runs in `_ready()`.
+- **Balance check:** MG vs LIGHT = 10 dmg × 10/s = 100 DPS (300 HP in 3 s); MG vs HEAVY = 48 DPS (6.3 s). Rocket vs HEAVY = 117 per 1.5 s = 78 DPS (3.8 s); rocket vs a group of 3 light = ~90 + 2 × ~70 per shot. So **MG wins vs light, rockets win vs heavy and groups**.
+- **Q/E swap** (`weapon_prev` Q / LB, `weapon_next` E / RB): 0.35 s swap with no firing; the new gun model pops in (scale 0.2 → 1, back-ease). **Each gun keeps its own cooldown** and holstered guns keep recharging (no swap-cancel exploit, no lost cooldown).
+- **Turret** now holds one model per Kind: the MG long barrel, or an olive rocket pod with two tubes and a yellow stripe. Each has its own muzzle and recoil (MG 0.12, rocket 0.2); the muzzle flash moves to the active muzzle (bigger and longer for rockets).
+- **WeaponHUD**: bottom-right slots (190 × 62) with name, damage-type tag (colored), a gold border on the active slot, a dark cooldown overlay + seconds (only for guns with a cooldown > 0.3 s), Q/E key boxes at the ends, a swap progress bar, and the hint "LMB fire · Q/E swap · ESC cursor".
+- **Dummies** now: LIGHT at (−25,115), (−35,85), (−20,55) + **a tight group of 3 LIGHT** at (40,128), (44.5,131), (37,133) for splash tests; HEAVY (armor plates, steel blue) at (25,112), (30,70), and the 2000 HP tank at (−60,125).
+
 ### Terrain test area (`scripts/world/terrain_test.gd`)
 - 400 × 400 m, 2.5 m grid: 161 × 161 height samples → indexed mesh with normals from neighbor heights, **trimesh collision** (`backface_collision = true`).
 - **Height** = dune noise (FastNoiseLite simplex smooth, freq 0.012, 2 octaves, remapped to 0..1 so it never goes below 0) × amplitude (1.2 m gentle → 5 m dunes in the west) + hills (NW 14 m σ28 at (−110, −110); SE 8 m σ22 at (130, 15)), × **flat mask** (0 within 4 m of roads, dirt, skidpad and start pad, blending to 1 at 22 m; also flat within 4–20 m of the walls).
@@ -281,8 +304,28 @@ Also: dust colour (road light grey, dirt brown, sand tan) and skid colour index 
 
 20. **Feedback #7:** "it's good now, feels okay". **Phase 2 step 1 (one gun) is accepted.** Committed and pushed as commit 2 ("Phase 2 step 1").
 
+21. **Design correction (user):** "no skill for gun, I just mean we will not have just one attack, but many types of attack based on the gun attached." I had misread "skill + cooldown". **There are no gun skills: each gun is its own attack type** (stream, spread blast, explosive, flame cone, charged shot, rear-dropped mines…), each with its own fire rate / cooldown, swapped with Q/E. Fixed GAME_DESIGN.md, removed the unused `skill_name` / `skill_cooldown` fields from `weapon_data.gd`, and updated the comments.
+
+22. **Research (user request): weapons, balancing, customization and equipment** (5 searches) → `docs/research/WEAPONS_BALANCE_EQUIPMENT.md`. Key points: one weapon per role; avoid equal DPS; tune per intended range; a **damage type × armor type table** (Ragnarok element style) to make Q/E swapping meaningful; a Crossout-style **energy budget + mount slots + Power Score**; ratio armor formula `dmg × K/(K+armor)`; PvE TTK targets (normal mob 2–4 s); rarity tiers with bounded stats; RO-style refine +0..+10 (softer failure); **chips** (RO cards) as the farming driver. Recommended order: Rocket Launcher → Q/E swap → damage/armor types → Shotgun → Flamethrower → Railgun…
+
+23. **User request:** "do a Rocket Launcher and Q/E swap system, also damage and armor types, but show some sign: if the gun isn't effective, white damage; if effective, golden orange numbers." → Implemented Phase 2 step 2 (see How Systems Work → step 2). New files: `damage_types.gd`, `rocket.gd`, `explosion.gd`, `ui/weapon_hud.gd`. Changed: health (effectiveness), damage_number (colors), weapon_data (Kind, damage_type, explosion), projectiles (damage type), turret (multi-gun), weapon_controller (swap, cooldowns, effectiveness), crosshair (effective/resisted), target_dummy (armor types), camera (`add_trauma`), input (Q/E), terrain dummies. **Not tested yet.**
+
+24. **User request:** "make a reload effect on the crosshair, also the machine gun can overheat." (Step 2 not yet tested by the user at this point.)
+    - **Crosshair reload ring:** while the current gun isn't ready (a cooldown > 0.3 s, e.g. rockets, or a gun swap in progress), the crosshair dims to 40% and a white ring (radius r+15) fills clockwise from the top. A gold pulse ring expands and fades for 0.25 s when it's ready. `WeaponController.reload_ratio()` feeds it.
+    - **Machine gun overheat** (`WeaponData` heat fields): +0.025 heat per shot (**40 shots = 4 s of continuous fire → overheat**). Cools 0.4/s after a 0.25 s pause. **Overheated: can't fire, cools 0.5/s, unlocks at 0 (a ~2 s lockout).** Spread × (1 + heat × 1.5), so it gets less accurate as it heats. Guns cool while holstered too.
+    - **Heat feedback:** crosshair heat gauge (right-side arc, white → orange → red; flashing red + "OVERHEATED" text when locked out); MG barrel glows orange-red (emission = heat² × 3); **steam** vents from the barrel while overheated; the HUD slot has a heat bar plus a flashing "OVERHEAT".
+    - Balance note: bursts under 4 s still give the full ~80 DPS, but sustained fire is now ~80 DPS for 4 s then 0 for 2 s (≈53 DPS average). Rockets help cover the lockout, which encourages swapping.
+    - Not tested yet.
+
+25. **Feedback (design):** "if the player ignores it and fires until the gun overheats, it should give a longer wait as a penalty, no?" Correct. **Bug in my values:** overheat recovery (2.0 s) was FASTER than stopping in time (0.25 + 0.97/0.4 ≈ 2.7 s), so overheating was rewarded.
+    - Fix: normal cooling 0.4 → **0.5/s** (full → 0 in ~2.25 s incl. the 0.25 s delay). Overheat: new **`overheat_delay` 0.8 s** before cooling starts, then **0.3/s** → **~4.1 s lockout**, nearly 2× the normal recovery.
+    - The crosshair now shows **"OVERHEATED 3.2s"** (countdown, `WeaponController.overheat_time_left()`).
+    - Design rule for future heat/ammo guns: **the penalty state must always recover slower than good play.**
+
+26. **Feedback #8:** "feels okay now". **Phase 2 step 2 accepted** (rocket launcher, Q/E swap, damage × armor types with colored numbers, reload ring, overheat with penalty). Committed and pushed as commit 3.
+
 **Not done / known unknowns**
-- Next combat step not started: a gun skill with a cooldown (needs decisions: what the machine gun skill does, and which key).
+- Next step not chosen yet. Options: the next attack type (Shotgun → Flamethrower → Railgun…), or Phase 3 (enemies that move and fight back, which needs player HP). Watch: rocket explosion visuals (transparent sphere + light in Compatibility), rocket self-hits near the car (the shooter is excluded, but rockets exploding on close ground still look fine?), swap feel, number colors.
 - Camera terrain collision isn't done (it may clip into dunes).
 
 **Open questions**

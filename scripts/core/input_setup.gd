@@ -14,8 +14,10 @@ func _ready() -> void:
 	_add_action("reset_car", [KEY_R], [JOY_BUTTON_BACK], [])
 	_add_action("toggle_debug", [KEY_F3], [], [])
 	_add_action("toggle_mute", [KEY_M], [], [])
-	# Combat (Phase 2). Planned later: Q / E = previous / next gun, a skill key per gun.
+	# Combat (Phase 2).
 	_add_action("fire", [], [], [], [MOUSE_BUTTON_LEFT])
+	_add_action("weapon_prev", [KEY_Q], [JOY_BUTTON_LEFT_SHOULDER], [])
+	_add_action("weapon_next", [KEY_E], [JOY_BUTTON_RIGHT_SHOULDER], [])
 	_add_action("toggle_cursor", [KEY_ESCAPE], [], [])
 
 

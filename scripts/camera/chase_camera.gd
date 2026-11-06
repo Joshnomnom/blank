@@ -156,6 +156,11 @@ func _on_car_impacted(strength: float) -> void:
 	_trauma = clampf(_trauma + strength / 20.0, 0.0, 1.0)
 
 
+## Shake from outside events (explosions). amount 0..1.
+func add_trauma(amount: float) -> void:
+	_trauma = clampf(_trauma + amount, 0.0, 1.0)
+
+
 func _place_camera(height_scale: float, distance_scale: float, lateral: Vector3) -> void:
 	var back := Vector3(sin(_yaw), 0.0, cos(_yaw))
 	global_position = _focus + back * distance * distance_scale + Vector3.UP * height * height_scale + lateral

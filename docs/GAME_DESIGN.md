@@ -67,9 +67,11 @@ It takes the structure of classic MMORPGs like Ragnarok Online (levels, stats, j
 
 **Combat controls (decided 2026-11-06):**
 - **Mouse-aim turret:** WASD drives, the mouse aims the roof turret, LMB fires. Car direction and gun direction are separate, so you can drift one way and shoot another. Light aim assist snaps to targets near the cursor.
-- **Every gun has its own active SKILL with a cooldown** (e.g. machine gun: an overdrive burst; shotgun: a knockback blast). Skill key TBD.
+- **No special skills on guns.** Instead, **each gun IS a different type of attack**, so the guns you attach decide how you fight (clarified by the user 2026-11-06). Each gun has its own fire rate / cooldown between attacks.
+- Attack type ideas: rapid stream (machine gun), close spread blast (shotgun), slow explosive with area damage (rocket / grenade launcher), continuous short-range cone (flamethrower), charged long-range shot (railgun), dropped behind the car (mines, oil slick from a rear mount).
 - **Q / E swap between equipped guns.**
-- Built one step at a time: step 1 is one normal machine gun only (no skill, no swapping).
+- **Damage types × armor types** (like Ragnarok's elements): kinetic / explosive / fire / energy vs light / heavy / shielded / organic. Effective hits show **golden-orange damage numbers**, resisted hits small white ones, and the crosshair says EFFECTIVE / RESISTED. Reading the enemy and swapping to the right gun is a core combat skill.
+- Built one step at a time: step 1 = one machine gun (done). Next: a 2nd gun type + Q/E swap.
 
 **Combat idea:** driving well powers your combat. Drifting charges a meter for skills and boost, ramming deals damage based on speed and mass, and dodging is done by driving. This keeps the driving and the RPG connected instead of separate.
 

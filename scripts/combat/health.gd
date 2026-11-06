@@ -1,9 +1,10 @@
 class_name Health
 extends Node
 ## Reusable hit points component (targets now; enemies, bosses and player cars later).
-## The owner forwards take_damage() here and listens to the signals.
+## The owner applies armor / damage-type multipliers first, then calls take_damage() with
+## the final amount and the multiplier used (effectiveness), for feedback colors.
 
-signal damaged(amount: float, at: Vector3)
+signal damaged(amount: float, at: Vector3, effectiveness: float)
 signal died
 
 @export var max_hp: float = 100.0
@@ -23,11 +24,11 @@ func ratio() -> float:
 	return hp / max_hp if max_hp > 0.0 else 0.0
 
 
-func take_damage(amount: float, at: Vector3) -> void:
+func take_damage(amount: float, at: Vector3, effectiveness: float = 1.0) -> void:
 	if hp <= 0.0:
 		return
 	hp = maxf(hp - amount, 0.0)
-	damaged.emit(amount, at)
+	damaged.emit(amount, at, effectiveness)
 	if hp <= 0.0:
 		died.emit()
 
