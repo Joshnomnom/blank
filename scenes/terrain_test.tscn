@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/terrain_test.gd" id="1_terrain"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/sedan.tscn" id="2_sedan"]
+[ext_resource type="Script" path="res://scripts/camera/chase_camera.gd" id="3_camera"]
+[ext_resource type="Script" path="res://scripts/debug/debug_overlay.gd" id="4_debug"]
+
+[node name="TerrainTest" type="Node3D"]
+
+[node name="Terrain" type="Node3D" parent="."]
+script = ExtResource("1_terrain")
+
+[node name="Sedan" parent="." instance=ExtResource("2_sedan")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 150)
+
+[node name="ChaseCamera" type="Camera3D" parent="."]
+script = ExtResource("3_camera")
+target_path = NodePath("../Sedan")
+
+[node name="DebugOverlay" type="CanvasLayer" parent="."]
+script = ExtResource("4_debug")
+car_path = NodePath("../Sedan")

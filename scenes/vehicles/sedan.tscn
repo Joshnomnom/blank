@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/car_controller.gd" id="1_car"]
+[ext_resource type="Script" path="res://scripts/vehicles/sedan_model.gd" id="2_model"]
+[ext_resource type="Script" path="res://scripts/vehicles/car_effects.gd" id="3_effects"]
+[ext_resource type="Script" path="res://scripts/vehicles/car_audio.gd" id="4_audio"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_body"]
+size = Vector3(1.8, 0.8, 4.4)
+
+[node name="Sedan" type="CharacterBody3D"]
+script = ExtResource("1_car")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("BoxShape3D_body")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("2_model")
+
+[node name="Effects" type="Node3D" parent="."]
+script = ExtResource("3_effects")
+
+[node name="Audio" type="AudioStreamPlayer" parent="."]
+script = ExtResource("4_audio")
