@@ -42,6 +42,13 @@ var _last_speed: float = 0.0
 var _brake_glow: float = 1.0
 var _susp_y: float = 0.0
 var _susp_v: float = 0.0
+var _mounts: Dictionary = {}
+
+
+## Weapon mount points (children of the body, so weapons lean and bounce with it).
+## Currently: "roof". Later: "front", "rear", "left", "right".
+func get_mount(mount_name: String) -> Node3D:
+	return _mounts.get(mount_name)
 
 
 ## Called by CarController when it lands. Pushes the body down; the spring brings it back.
@@ -139,6 +146,13 @@ func _build() -> void:
 	for side in [-1.0, 1.0]:
 		_add_box(_body, Vector3(0.4, 0.14, 0.05), Vector3(0.6 * side, 0.8, -2.21), headlight)
 		_add_box(_body, Vector3(0.4, 0.12, 0.05), Vector3(0.6 * side, 0.8, 2.21), _taillight_mat)
+
+	# Weapon mount on the roof.
+	var roof := Node3D.new()
+	roof.name = "RoofMount"
+	roof.position = Vector3(0.0, 1.48, 0.35)
+	_body.add_child(roof)
+	_mounts["roof"] = roof
 
 	# Wheels (not parented to the body, so they don't lean with it).
 	var tire := _material(Color(0.08, 0.08, 0.08), 0.9)

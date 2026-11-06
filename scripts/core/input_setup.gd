@@ -14,11 +14,19 @@ func _ready() -> void:
 	_add_action("reset_car", [KEY_R], [JOY_BUTTON_BACK], [])
 	_add_action("toggle_debug", [KEY_F3], [], [])
 	_add_action("toggle_mute", [KEY_M], [], [])
+	# Combat (Phase 2). Planned later: Q / E = previous / next gun, a skill key per gun.
+	_add_action("fire", [], [], [], [MOUSE_BUTTON_LEFT])
+	_add_action("toggle_cursor", [KEY_ESCAPE], [], [])
 
 
-func _add_action(action: StringName, keys: Array, buttons: Array, axes: Array) -> void:
+func _add_action(action: StringName, keys: Array, buttons: Array, axes: Array, mouse_buttons: Array = []) -> void:
 	if not InputMap.has_action(action):
 		InputMap.add_action(action, DEADZONE)
+
+	for mouse_button in mouse_buttons:
+		var mouse_event := InputEventMouseButton.new()
+		mouse_event.button_index = mouse_button
+		InputMap.action_add_event(action, mouse_event)
 
 	for key in keys:
 		var key_event := InputEventKey.new()

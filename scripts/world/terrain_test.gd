@@ -79,6 +79,7 @@ func _ready() -> void:
 	_build_terrain()
 	_build_overlays()
 	_build_ramps()
+	_spawn_targets()
 	WorldBuilder.add_outer_ground(self)
 	WorldBuilder.add_walls(self, half_size * 2.0, wall_height, wall_thickness)
 	WorldBuilder.add_wall_poles(self, half_size * 2.0, wall_height, wall_thickness, 10.0)
@@ -251,6 +252,29 @@ func _add_road_overlay(rect: Rect2, y: float, center_line: bool) -> void:
 	var c := rect.get_center()
 	mi.position = Vector3(c.x, y, c.y)
 	add_child(mi)
+
+
+# --------------------------------------------------------------------------
+# Training targets (Phase 2): a small "shooting range" around the start
+# --------------------------------------------------------------------------
+
+func _spawn_targets() -> void:
+	# [x, z, max_hp]. Placed off the roads, on sand near the start pad.
+	var targets := [
+		[-25.0, 115.0, 300.0],
+		[25.0, 112.0, 300.0],
+		[-35.0, 85.0, 300.0],
+		[30.0, 70.0, 300.0],
+		[-20.0, 55.0, 300.0],
+		[-60.0, 125.0, 2000.0],  # tanky one, for testing sustained fire
+	]
+	for t in targets:
+		var dummy := TargetDummy.new()
+		dummy.max_hp = t[2]
+		if t[2] > 1000.0:
+			dummy.body_color = Color(0.35, 0.4, 0.5)
+		add_child(dummy)
+		dummy.position = Vector3(t[0], _height(t[0], t[1]), t[1])
 
 
 # --------------------------------------------------------------------------

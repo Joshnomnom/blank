@@ -47,6 +47,7 @@ func _process(_delta: float) -> void:
 		"          OR full steer + throttle at high speed",
 		"          hold W to keep drifting, steer to set the angle,",
 		"          counter-steer or release W to exit",
+		"Mouse   - aim turret   LMB - fire   ESC - show cursor",
 		"R       - reset car",
 		"M       - mute sound",
 		"Wheel   - camera zoom",

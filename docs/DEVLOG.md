@@ -11,9 +11,10 @@ Related docs: [GAME_DESIGN.md](GAME_DESIGN.md) (overall plan) · [research/](res
 
 | | |
 |---|---|
-| **Phase** | **1: terrain feel**. Phase 0 (driving prototype) is done; the user said "driving feels a lot better now". |
-| **State** | **Phase 1 (terrain) is accepted by the user** ("it's okay now"). The ground system works after the round-5 fix ([research/VEHICLE_GROUND_PHYSICS.md](research/VEHICLE_GROUND_PHYSICS.md)). **Sound is still weird and deferred to the backlog.** |
-| **Next** | Waiting for the user to choose. Proposed: (1) git setup, (2) Phase 2 combat basics, which first needs the **aiming scheme** decided. |
+| **Phase** | **2: combat basics** (step 1: one gun). Phases 0 (driving) and 1 (terrain) are done and accepted. |
+| **State** | **Phase 2 step 1 (one gun) is done and accepted** ("it's good now, feels okay"): mouse-aimed roof turret, machine gun, aim assist, target dummies with HP bars, damage numbers. Sound is deferred (backlog). |
+| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 = Phase 2 step 1. **Rule: commit + push after the user accepts a step.** |
+| **Next** | User tests shooting. Then the next combat steps, one at a time: gun skill + cooldown → a 2nd gun + Q/E swap → enemies that move/fight back (Phase 3). |
 | **Main scene** | `scenes/terrain_test.tscn` (new). The old flat arena `scenes/test_drive.tscn` still works (car uses "road" grip there). |
 | **After that** | Phase 2, combat basics (one weapon, a dummy target). The car model is planned around Phase 2–3, when weapon mounts need a real shape. |
 | **Research** | [research/CAR_PHYSICS_RESEARCH.md](research/CAR_PHYSICS_RESEARCH.md) (physics math; §8 surfaces) · [research/DRIVING_GAME_FEEL.md](research/DRIVING_GAME_FEEL.md) (game feel, Driving v2 design) · [research/VEHICLE_GROUND_PHYSICS.md](research/VEHICLE_GROUND_PHYSICS.md) (ground-following approaches, pitfalls, our bug, decision to keep kinematic + rays) |
@@ -37,6 +38,9 @@ Related docs: [GAME_DESIGN.md](GAME_DESIGN.md) (overall plan) · [research/](res
 | S / ↓ | Left trigger | Brake, then reverse. **A quick tap + steer starts a drift.** |
 | A, D / ←, → | Left stick | Steer. In a drift: into the corner = wider angle, counter-steer = straighten/exit. In the air: small yaw control. |
 | Space | A | Handbrake (+ steer at speed = drift) |
+| Mouse | | Aim the roof turret (crosshair turns red when aim assist locks a target) |
+| LMB (hold) | | Fire machine gun |
+| ESC | | Show/hide the mouse cursor (firing is disabled while the cursor is shown) |
 | R | Back | Reset car to spawn |
 | M | | Mute / unmute sound |
 | Mouse wheel | | Camera zoom |
@@ -77,7 +81,7 @@ docs/
 scenes/
   terrain_test.tscn        MAIN scene (Phase 1): Terrain + Sedan (spawn 0,0.3,150) + ChaseCamera + DebugOverlay
   test_drive.tscn          Phase 0 flat arena: Arena + Sedan + ChaseCamera + DebugOverlay
-  vehicles/sedan.tscn      CharacterBody3D (CarController) + box collision + Model + Effects + Audio
+  vehicles/sedan.tscn      CharacterBody3D (CarController) + box collision + Model + Effects + Audio + Weapons
 scripts/
   core/input_setup.gd          autoload "InputSetup": registers all input actions in code
   vehicles/car_controller.gd   class CarController: arcade driving (grip + drift-angle controller) + terrain
@@ -86,6 +90,14 @@ scripts/
   vehicles/skid_marks.gd       class SkidMarks: fading skid marks (MultiMesh ring buffer + shader, color per surface)
   vehicles/car_audio.gd        synthesized engine / tire scrub / road squeal / wind (AudioStreamGenerator)
   camera/chase_camera.gd       class ChaseCamera: third-person chase, continuous drift/speed effects, impact shake
+  combat/weapon_controller.gd  class WeaponController ("Weapons" node on the car): mouse aim, aim assist, firing, HUD
+  combat/weapon_data.gd        class WeaponData (Resource): gun stats (+ planned skill fields); make_machine_gun()
+  combat/turret.gd             class Turret: roof turret mesh, yaw/pitch toward the aim point, recoil, muzzle flash
+  combat/projectiles.gd        class Projectiles: data-driven bullets (segment raycasts), MultiMesh tracers, impact sparks/dust
+  combat/health.gd             class Health: reusable HP component (damaged / died signals)
+  combat/target_dummy.gd       class TargetDummy: training target (HP bar shader, hit flash, death burst, respawn)
+  combat/damage_number.gd      class DamageNumber: floating Label3D damage numbers
+  ui/crosshair.gd              class Crosshair: crosshair drawn at the mouse (red when locked)
   world/surfaces.gd            class Surfaces: road / dirt / sand property table
   world/world_builder.gd       class WorldBuilder: shared static helpers (sky, sun, fog, grid material, walls, poles, landmarks)
   world/terrain_test.gd        Phase 1 terrain area: heightmap dunes and hills, roads, skidpad, dirt, ramps, surface map
@@ -178,6 +190,20 @@ Also: dust colour (road light grey, dirt brown, sand tan) and skid colour index 
 - **Impacts and hard landings:** trauma shake.
 - Mouse-wheel zoom 0.7–1.6×. **No terrain collision yet**, so it can clip into dunes.
 
+### Combat, Phase 2 step 1 (`scripts/combat/`)
+**Design (user decision):** a mouse-aim turret. Later, each gun gets an active skill with a cooldown and Q/E swaps guns. Step 1 = one normal gun only.
+- **WeaponController** (node "Weapons" on the Sedan, after Model): creates the Turret on the model's `"roof"` mount (`SedanModel.get_mount()`, a child of the body, so it leans and bounces with it), a Projectiles node, and the HUD (crosshair + weapon label). Hides the OS cursor; ESC toggles it (no firing while the cursor is visible).
+  - **Aim** (every physics tick): **aim assist** first: the live node in group `"targets"` whose `get_aim_point()` is nearest the cursor on screen, within `aim_assist_radius_px` 70 and the weapon range → aim exactly at it (crosshair turns red). Otherwise a camera ray through the mouse (400 m, mask 3, excluding the car) → hit point, or the ray end.
+  - **Fire**: hold LMB; a cooldown accumulator fires `fire_rate` shots/s exactly. Direction = barrel forward + random cone spread (`spread_deg`). Damage × random 0.9–1.1 (varied numbers). Lifetime = range / speed.
+- **WeaponData** machine gun: damage 8, 10 shots/s (~80 DPS), spread 1.2°, bullet 220 m/s, range 160 m, tracer color gold. Skill fields exist but are unused.
+- **Turret**: base → yaw pivot (head) → pitch pivot → barrel → muzzle. Turns at yaw 8 rad/s, pitch 6 rad/s, pitch −15°..+35°, computed in the turret's own (tilted) space. Recoil (barrel kicks back 0.12 m) and a 0.045 s muzzle-flash billboard per shot.
+- **Projectiles**: bullets are packed arrays (pos, vel, life, damage), max 128. Each tick: a raycast from the old to the new position (mask 3, excluding the shooter) so there's no tunnelling. Hit → `take_damage(amount, pos)` on the collider or its parent; sparks on targets/solids, a dust puff on the ground layer. Tracers: ONE MultiMesh of 3 m × 0.07 m glowing boxes. Impact particles: pooled one-shot CPUParticles3D (6 sparks, 6 dust), StandardMaterial albedo (**no vertex colors**), shrink-out scale curve.
+- **Health**: `max_hp`, `hp`, `take_damage`, `damaged(amount, at)`, `died`, `reset()`, `ratio()`. Reusable for enemies and player cars later.
+- **TargetDummy** (StaticBody3D, layer 1, group "targets"): post + torso + head with yellow stripes, box collision 1.2 × 2.5 × 0.8. On hit: damage number, health bar shown (billboard shader quad, `ratio` uniform, drawn on top), white emission flash 0.12 s. On death: spark burst, hidden, collision disabled, respawn after 4 s at full HP. `get_aim_point()` = 1.6 m up.
+- **DamageNumber**: Label3D billboard, no depth test, rises 1.6 m with ease-out over 0.8 s and fades, then frees itself.
+- **Targets placed** in terrain_test (`_spawn_targets`, on sand around the start, height from `_height`): 5 × 300 HP at (−25,115), (25,112), (−35,85), (30,70), (−20,55), and a tanky blue-grey one with 2000 HP at (−60,125).
+- No gun sound yet (sound is deferred).
+
 ### Terrain test area (`scripts/world/terrain_test.gd`)
 - 400 × 400 m, 2.5 m grid: 161 × 161 height samples → indexed mesh with normals from neighbor heights, **trimesh collision** (`backface_collision = true`).
 - **Height** = dune noise (FastNoiseLite simplex smooth, freq 0.012, 2 octaves, remapped to 0..1 so it never goes below 0) × amplitude (1.2 m gentle → 5 m dunes in the west) + hills (NW 14 m σ28 at (−110, −110); SE 8 m σ22 at (130, 15)), × **flat mask** (0 within 4 m of roads, dirt, skidpad and start pad, blending to 1 at 22 m; also flat within 4–20 m of the walls).
@@ -244,13 +270,19 @@ Also: dust colour (road light grey, dirt brown, sand tan) and skid colour index 
 
 16. **Feedback #6:** "it's okay now, but the sound is still weird; we'll fix it later." The round-5 ground fixes work. **Phase 1 is accepted.** Sound is deferred to the backlog (plan: replace the synth with real CC0 engine/tire samples, or a better synth).
 
+17. **Git set up** at the user's request: `git init -b main`, added `.gitattributes` (`* text=auto eol=lf`), remote `https://github.com/Joshnomnom/blank.git`, commit `e1b2348` "Phase 0 + Phase 1", pushed to `main`. Godot `.gd.uid` files are committed (as recommended); `.godot/` is ignored.
+18. **Combat decision:** aiming = **A. mouse-aim turret**. The user also wants each gun to have a **skill with a cooldown** and **Q/E to swap guns**, but "let's try just one normal gun first". Recorded in GAME_DESIGN.md.
+19. **Implemented Phase 2 step 1** (see How Systems Work → Combat): input actions `fire` (LMB) and `toggle_cursor` (ESC); `input_setup._add_action` gained a mouse-buttons parameter; `SedanModel.get_mount("roof")`; new `scripts/combat/*` and `scripts/ui/crosshair.gd`; Weapons node in `sedan.tscn`; 6 dummies in terrain_test. **Not tested yet.**
+
 **Backlog (deferred, not forgotten)**
-- **Sound**: still "weird". Replace the synthesized audio with real samples (CC0 packs), with pitch shifting by RPM.
+- **Sound**: still "weird". Replace the synthesized audio with real samples (CC0 packs), with pitch shifting by RPM. Also add gun sounds.
 - Camera collision with dunes (the camera can clip into terrain).
-- Set up git version control (nothing is under version control yet).
+- Gamepad aiming (right stick) for the turret.
+
+20. **Feedback #7:** "it's good now, feels okay". **Phase 2 step 1 (one gun) is accepted.** Committed and pushed as commit 2 ("Phase 2 step 1").
 
 **Not done / known unknowns**
-- Next step not chosen yet (proposed: git setup, then Phase 2 combat basics; needs an aiming-scheme decision).
+- Next combat step not started: a gun skill with a cooldown (needs decisions: what the machine gun skill does, and which key).
 - Camera terrain collision isn't done (it may clip into dunes).
 
 **Open questions**

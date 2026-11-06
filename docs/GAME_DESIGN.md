@@ -65,6 +65,12 @@ It takes the structure of classic MMORPGs like Ragnarok Online (levels, stats, j
 | Guilds and War of Emperium | **Crews and Territory War** over towns and districts |
 | Quests and instances | **Story missions, dungeons, heists** |
 
+**Combat controls (decided 2026-11-06):**
+- **Mouse-aim turret:** WASD drives, the mouse aims the roof turret, LMB fires. Car direction and gun direction are separate, so you can drift one way and shoot another. Light aim assist snaps to targets near the cursor.
+- **Every gun has its own active SKILL with a cooldown** (e.g. machine gun: an overdrive burst; shotgun: a knockback blast). Skill key TBD.
+- **Q / E swap between equipped guns.**
+- Built one step at a time: step 1 is one normal machine gun only (no skill, no swapping).
+
 **Combat idea:** driving well powers your combat. Drifting charges a meter for skills and boost, ramming deals damage based on speed and mass, and dodging is done by driving. This keeps the driving and the RPG connected instead of separate.
 
 ## 7. Side activities (not the core)
