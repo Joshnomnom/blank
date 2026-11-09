@@ -9,6 +9,8 @@ var life: float = 2.5
 var weapon: WeaponData
 var damage: float = 90.0
 var shooter_rid: RID
+## Explosion radius multiplier (Equipment: Blast Radius stat).
+var radius_mult: float = 1.0
 
 var _trail: CPUParticles3D
 var _body: Node3D
@@ -50,7 +52,7 @@ func _physics_process(delta: float) -> void:
 
 func _explode(at: Vector3) -> void:
 	_dead = true
-	Explosion.spawn(get_parent(), at, weapon.explosion_radius, damage, weapon.damage_type, weapon.splash_min, [shooter_rid])
+	Explosion.spawn(get_parent(), at, weapon.explosion_radius * radius_mult, damage, weapon.damage_type, weapon.splash_min, [shooter_rid])
 	_body.visible = false
 	_trail.emitting = false
 	get_tree().create_timer(_trail.lifetime + 0.1).timeout.connect(queue_free)

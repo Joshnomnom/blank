@@ -69,6 +69,7 @@ var _focus: Vector3 = Vector3.ZERO
 var _side: float = 0.0       ## smoothed -1..1 slide side (drift angle based)
 var _tighten: float = 0.0    ## smoothed 0..drift_tighten
 var _trauma: float = 0.0
+var _fov_kick: float = 0.0
 var _time: float = 0.0
 var _looking_back: bool = false
 var _noise := FastNoiseLite.new()
@@ -149,8 +150,9 @@ func _process(delta: float) -> void:
 		global_position += (global_basis.x * nx + global_basis.y * ny) * shake
 
 	# FOV widens with speed.
-	var target_fov := lerpf(base_fov, max_fov, speed_ratio)
-	fov = lerpf(fov, target_fov, 1.0 - exp(-4.0 * delta))
+	_fov_kick = move_toward(_fov_kick, 0.0, 14.0 * delta)
+	var target_fov := lerpf(base_fov, max_fov, speed_ratio) + _fov_kick
+	fov = lerpf(fov, target_fov, 1.0 - exp(-8.0 * delta))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -163,6 +165,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_car_impacted(strength: float) -> void:
 	_trauma = clampf(_trauma + strength / 20.0, 0.0, 1.0)
+
+
+## Short FOV punch (nitro dash). Decays at 14 deg/s.
+func kick_fov(degrees: float) -> void:
+	_fov_kick = maxf(_fov_kick, degrees)
 
 
 ## Shake from outside events (explosions). amount 0..1.

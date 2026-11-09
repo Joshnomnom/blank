@@ -10,6 +10,9 @@ extends Node3D
 ## - front wheels point along the travel direction while drifting (counter-steer look)
 ## - brake lights brighten when braking
 ## - extra body roll while drifting
+##
+## Phase 4 garage: BODY KITS (visual only, no stats, no collision): paint + front / rear /
+## roof / side pieces. set_kit(category, index); option 0 = stock. Names and scrap costs in KITS.
 
 const WHEEL_RADIUS := 0.36
 const WHEEL_WIDTH := 0.28
@@ -43,6 +46,79 @@ var _brake_glow: float = 1.0
 var _susp_y: float = 0.0
 var _susp_v: float = 0.0
 var _mounts: Dictionary = {}
+var _paint_mat: StandardMaterial3D
+var _kit_mats: Dictionary = {}
+var _kit_roots: Dictionary = {}   # category -> Node3D
+
+## category -> [[name, scrap cost], ...]. Index 0 = stock (free).
+const KITS := {
+	"paint": [["Rust Red", 0], ["Desert Sand", 100], ["Gunmetal", 100], ["Toxic Green", 100],
+		["Midnight Blue", 100], ["Hazard Yellow", 100], ["Bone White", 100], ["Matte Black", 100]],
+	"front": [["Stock", 0], ["Bull Bar", 150], ["Ram Plow", 300]],
+	"rear": [["Stock", 0], ["Lip Spoiler", 120], ["Big Wing", 250]],
+	"roof": [["Stock", 0], ["Light Bar", 150], ["Roof Rails", 120]],
+	"side": [["Stock", 0], ["Armor Skirts", 200], ["Side Pipes", 180]],
+}
+const PAINT_COLORS := [
+	Color(0.78, 0.2, 0.12), Color(0.82, 0.68, 0.45), Color(0.32, 0.34, 0.37), Color(0.45, 0.8, 0.15),
+	Color(0.1, 0.16, 0.42), Color(0.95, 0.75, 0.05), Color(0.9, 0.88, 0.8), Color(0.06, 0.06, 0.07),
+]
+
+
+static func kit_cost(category: String, index: int) -> int:
+	var options: Array = KITS.get(category, [])
+	return int(options[index][1]) if index >= 0 and index < options.size() else 0
+
+
+func set_kit(category: String, index: int) -> void:
+	if category == "paint":
+		_paint_mat.albedo_color = PAINT_COLORS[clampi(index, 0, PAINT_COLORS.size() - 1)]
+		return
+	var root: Node3D = _kit_roots.get(category)
+	if root == null:
+		return
+	for c in root.get_children():
+		c.queue_free()
+	var metal: Material = _kit_mats["metal"]
+	var dark: Material = _kit_mats["dark"]
+	var chrome: Material = _kit_mats["chrome"]
+	match [category, index]:
+		["front", 1]:  # bull bar
+			for x in [-0.5, 0.5]:
+				_add_box(root, Vector3(0.08, 0.6, 0.08), Vector3(x, 0.72, -2.42), metal)
+			_add_box(root, Vector3(1.4, 0.08, 0.08), Vector3(0.0, 0.98, -2.44), metal)
+			_add_box(root, Vector3(1.6, 0.08, 0.08), Vector3(0.0, 0.58, -2.44), metal)
+		["front", 2]:  # ram plow
+			var plow := _add_box(root, Vector3(2.1, 0.55, 0.1), Vector3(0.0, 0.58, -2.55), metal)
+			plow.rotation.x = -0.45
+			for x in [-0.7, 0.0, 0.7]:
+				_add_box(root, Vector3(0.1, 0.1, 0.35), Vector3(x, 0.55, -2.75), chrome)
+		["rear", 1]:  # lip spoiler
+			_add_box(root, Vector3(1.6, 0.06, 0.3), Vector3(0.0, 0.98, 2.05), _paint_mat)
+		["rear", 2]:  # big wing
+			for x in [-0.6, 0.6]:
+				_add_box(root, Vector3(0.06, 0.38, 0.12), Vector3(x, 1.12, 1.95), dark)
+			_add_box(root, Vector3(1.95, 0.06, 0.48), Vector3(0.0, 1.32, 1.95), dark)
+			for x in [-0.98, 0.98]:
+				_add_box(root, Vector3(0.04, 0.22, 0.5), Vector3(x, 1.32, 1.95), dark)
+		["roof", 1]:  # light bar
+			_add_box(root, Vector3(1.3, 0.12, 0.16), Vector3(0.0, 1.54, -0.42), dark)
+			for x in [-0.45, -0.15, 0.15, 0.45]:
+				_add_box(root, Vector3(0.24, 0.08, 0.03), Vector3(x, 1.54, -0.51), _kit_mats["lamp"])
+		["roof", 2]:  # roof rails
+			for x in [-0.68, 0.68]:
+				_add_box(root, Vector3(0.06, 0.06, 1.7), Vector3(x, 1.53, 0.35), chrome)
+				for z in [-0.35, 1.05]:
+					_add_box(root, Vector3(0.06, 0.08, 0.06), Vector3(x, 1.5, z), chrome)
+		["side", 1]:  # armor skirts
+			for x in [-0.93, 0.93]:
+				_add_box(root, Vector3(0.08, 0.32, 1.9), Vector3(x, 0.52, 0.0), metal)
+				for z in [-0.6, 0.0, 0.6]:
+					_add_box(root, Vector3(0.1, 0.06, 0.06), Vector3(x * 1.02, 0.6, z), chrome)
+		["side", 2]:  # side exhaust pipes
+			for x in [-0.98, 0.98]:
+				_add_box(root, Vector3(0.12, 0.12, 1.5), Vector3(x, 0.42, 0.3), chrome)
+				_add_box(root, Vector3(0.14, 0.14, 0.12), Vector3(x, 0.42, 1.08), dark)
 
 
 ## Weapon mount points (children of the body, so weapons lean and bounce with it).
@@ -128,6 +204,18 @@ func _build() -> void:
 	add_child(_body)
 
 	var paint := _material(body_color, 0.45)
+	_paint_mat = paint
+	_kit_mats = {
+		"metal": _material(Color(0.35, 0.33, 0.3), 0.6),
+		"dark": _material(Color(0.1, 0.1, 0.11), 0.5),
+		"chrome": _material(Color(0.8, 0.8, 0.82), 0.2),
+		"lamp": _material(Color(1.0, 0.95, 0.7), 0.3, Color(1.0, 0.9, 0.6)),
+	}
+	for category in ["front", "rear", "roof", "side"]:
+		var kit_root := Node3D.new()
+		kit_root.name = "Kit_" + category
+		_body.add_child(kit_root)
+		_kit_roots[category] = kit_root
 	var glass := _material(Color(0.1, 0.14, 0.18), 0.15)
 	var trim := _material(Color(0.2, 0.2, 0.22), 0.7)
 	var headlight := _material(Color(1.0, 0.95, 0.7), 0.3, Color(1.0, 0.9, 0.6))

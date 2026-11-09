@@ -560,7 +560,10 @@ func _ground_snap(delta: float, fwd: Vector3) -> void:
 	if not hit.is_empty():
 		var p: Vector3 = hit["position"]
 		global_position.y = p.y
-		_up = _up.slerp(hit["normal"], 1.0 - exp(-8.0 * delta)).normalized()
+		# Normalized lerp (slerp errors when the vectors are nearly equal: "axis must be normalized").
+		var blended := _up.lerp(hit["normal"], 1.0 - exp(-8.0 * delta))
+		if blended.length_squared() > 0.000001:
+			_up = blended.normalized()
 	var back := -(fwd - _up * fwd.dot(_up)).normalized()
 	var right := _up.cross(back).normalized()
 	global_basis = Basis(right, _up, back)

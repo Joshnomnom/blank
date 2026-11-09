@@ -20,6 +20,11 @@ func _ready() -> void:
 	_add_action("weapon_next", [KEY_E], [JOY_BUTTON_RIGHT_SHOULDER], [])
 	_add_action("toggle_cursor", [KEY_ESCAPE], [], [])
 	_add_action("look_back", [KEY_B], [JOY_BUTTON_Y], [])
+	# Phase 4: bag screen (equip parts, insert chips).
+	_add_action("open_bag", [KEY_I], [], [])
+	_add_action("interact", [KEY_F], [JOY_BUTTON_X], [])
+	# Phase 4 step 3: nitro dash.
+	_add_action("nitro", [KEY_SHIFT], [JOY_BUTTON_B], [])
 	# Tester tools (Phase 3, scripts/debug/test_spawner.gd).
 	_add_action("debug_spawn_1", [KEY_1], [], [])
 	_add_action("debug_spawn_2", [KEY_2], [], [])
@@ -29,6 +34,9 @@ func _ready() -> void:
 	_add_action("debug_kill_all", [KEY_K], [], [])
 	_add_action("debug_god", [KEY_G], [], [])
 	_add_action("debug_heal", [KEY_H], [], [])
+	_add_action("debug_give_part", [KEY_6], [], [])
+	_add_action("debug_give_chip", [KEY_7], [], [])
+	_add_action("debug_give_scrap", [KEY_8], [], [])
 
 
 func _add_action(action: StringName, keys: Array, buttons: Array, axes: Array, mouse_buttons: Array = []) -> void:

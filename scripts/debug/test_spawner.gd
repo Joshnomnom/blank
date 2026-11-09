@@ -7,6 +7,8 @@ extends Node
 ##   5 respawn every dead camp member now (also the boss)
 ##   K kill all enemies (they drop loot)
 ##   G god mode (no damage) · H heal to full
+##   6 give a random part (random rarity, weighted toward good ones for testing)
+##   7 give a random chip · 8 give 1000 scrap (Phase 4 bag testing)
 
 const SPAWN_KEYS := {
 	&"debug_spawn_1": &"scrap_drone",
@@ -34,6 +36,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		if status:
 			status.god_mode = not status.god_mode
 			_toast("God mode %s" % ("ON" if status.god_mode else "OFF"))
+	elif event.is_action_pressed("debug_give_part"):
+		var r := Loot.roll_rarity(4.0)
+		_give(ItemDB.make_random_part(r))
+	elif event.is_action_pressed("debug_give_chip"):
+		var ids := ItemDB.CHIPS.keys()
+		_give(ItemDB.make_chip(ids[randi() % ids.size()]))
+	elif event.is_action_pressed("debug_give_scrap"):
+		_give({"kind": "scrap", "amount": 1000})
 	elif event.is_action_pressed("debug_heal"):
 		var status := _status()
 		if status:
@@ -61,6 +71,12 @@ func _spawn(id: StringName) -> void:
 	var enemy := Enemy.create(data, pos, null, 12.0)
 	get_tree().current_scene.add_child(enemy)
 	_toast("Spawned %s" % data.display_name)
+
+
+func _give(item: Dictionary) -> void:
+	var status := _status()
+	if status:
+		status.collect(item)
 
 
 func _status() -> PlayerStatus:

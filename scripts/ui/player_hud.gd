@@ -62,8 +62,10 @@ func _draw() -> void:
 	draw_string_outline(font, origin + Vector2(10.0, 18.0), hp_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, 4, Color.BLACK)
 	draw_string(font, origin + Vector2(10.0, 18.0), hp_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, TEXT)
 
+	_draw_nitro(font, origin + Vector2(BAR_SIZE.x + 16.0, 4.0))
+
 	# Inventory counters + god mode tag.
-	var inv := "SCRAP %d    PARTS %d" % [status.scrap, status.items.size()]
+	var inv := "SCRAP %d    BAG %d  [I]" % [status.scrap, status.items.size()]
 	if status.god_mode:
 		inv += "    [GOD MODE]"
 	draw_string_outline(font, origin + Vector2(0.0, -12.0), inv, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 15, 4, Color.BLACK)
@@ -93,6 +95,30 @@ func _draw() -> void:
 		draw_string(font, center + Vector2(-300.0, -10.0), "DESTROYED", HORIZONTAL_ALIGNMENT_CENTER, 600.0, 56, Color(1.0, 0.3, 0.2))
 		var t2 := "Respawning in %.1f" % status.respawn_time_left()
 		draw_string(font, center + Vector2(-300.0, 34.0), t2, HORIZONTAL_ALIGNMENT_CENTER, 600.0, 22, TEXT)
+
+
+## Nitro meter right of the HP bar: blue fill, tick marks per dash, white flash on dash.
+func _draw_nitro(font: Font, pos: Vector2) -> void:
+	var car := status.get_parent() as CarController
+	if car == null or car.nitro == null:
+		return
+	var n := car.nitro
+	var size := Vector2(170.0, 16.0)
+	draw_rect(Rect2(pos - Vector2(3, 3), size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.7))
+	var ratio := n.nitro / n.max_nitro
+	var has_charge := n.charges() > 0
+	var fill := Color(0.3, 0.65, 1.0) if has_charge else Color(0.2, 0.35, 0.55)
+	fill = fill.lerp(Color.WHITE, n.flame * 0.6)
+	draw_rect(Rect2(pos, Vector2(size.x * ratio, size.y)), fill)
+	# Tick at every dash cost.
+	var c := n.dash_cost
+	while c < n.max_nitro:
+		var x := pos.x + size.x * c / n.max_nitro
+		draw_line(Vector2(x, pos.y), Vector2(x, pos.y + size.y), Color(0.0, 0.0, 0.0, 0.8), 2.0)
+		c += n.dash_cost
+	var label := "NITRO x%d  [Shift]" % n.charges()
+	draw_string_outline(font, pos + Vector2(6.0, 13.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, 4, Color.BLACK)
+	draw_string(font, pos + Vector2(6.0, 13.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, TEXT)
 
 
 func _draw_boss_bar(font: Font, screen: Vector2, boss: Node) -> void:

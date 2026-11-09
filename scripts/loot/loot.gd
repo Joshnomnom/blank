@@ -3,11 +3,9 @@ extends RefCounted
 ## Loot tables and rolls (Phase 3, start of the farming loop).
 ## Research: docs/research/WEAPONS_BALANCE_EQUIPMENT.md §4 (rarity, chips).
 ## Every kill: scrap (currency). Chance of a car PART with a rarity. Small chance of the
-## enemy's CHIP (our version of Ragnarok cards). Items are plain dictionaries for now:
+## enemy's CHIP (our version of Ragnarok cards). Items are plain dictionaries:
 ##   {"kind": "scrap", "amount": int}
-##   {"kind": "part", "name": String, "slot": String, "rarity": Rarity}
-##   {"kind": "chip", "name": String, "rarity": Rarity.EPIC, "source": StringName}
-## Stats for parts/chips come in Phase 4 (RPG core).
+##   parts and chips: built by ItemDB (scripts/items/item_db.gd) with real stats (Phase 4).
 
 enum Rarity { COMMON, UNCOMMON, RARE, EPIC, LEGENDARY }
 
@@ -21,8 +19,6 @@ const RARITY_COLORS := [
 ]
 ## Base weights (percent) for Common..Legendary.
 const RARITY_WEIGHTS := [70.0, 20.0, 8.0, 1.8, 0.2]
-const PREFIXES := ["Rusty", "Salvaged", "Tuned", "Military", "Prototype"]
-const SLOTS := ["Engine", "Tires", "Armor Plate", "Suspension", "Nitro Tank", "Turret Motor", "Radiator", "Gearbox"]
 
 
 ## rarity_bonus multiplies the weight of every rarity above Common (boss = big bonus).
@@ -48,13 +44,11 @@ static func roll(data: EnemyData) -> Array[Dictionary]:
 	drops.append({"kind": "scrap", "amount": randi_range(data.scrap_min, data.scrap_max)})
 	for i in data.item_rolls:
 		if randf() < data.item_chance:
-			var rarity := roll_rarity(data.rarity_bonus)
-			var slot: String = SLOTS[randi() % SLOTS.size()]
-			drops.append({"kind": "part", "slot": slot, "rarity": rarity,
-				"name": "%s %s" % [PREFIXES[rarity], slot]})
+			drops.append(ItemDB.make_random_part(roll_rarity(data.rarity_bonus)))
 	if randf() < data.chip_chance:
-		drops.append({"kind": "chip", "rarity": Rarity.EPIC, "source": data.id,
-			"name": "%s Chip" % data.display_name})
+		var chip := ItemDB.make_chip(data.id)
+		if not chip.is_empty():
+			drops.append(chip)
 	return drops
 
 

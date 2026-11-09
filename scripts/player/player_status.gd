@@ -6,6 +6,8 @@ extends Node
 ## Damage: amount × DamageTypes.multiplier(damage_type, armor_type) -> Health.
 ## Destroyed: controls off, explosion, "DESTROYED" overlay, respawn at the spawn point
 ## after respawn_time with full HP and invuln_time seconds of invulnerability (car blinks).
+## Phase 4: Equipment (equipped parts + chips -> stats) and the BAG screen (I key).
+## Death costs repair only (decided 2026-11-09; the repair cost itself comes in a later step).
 
 signal destroyed
 signal respawned
@@ -14,16 +16,25 @@ signal respawned
 @export var armor_type: DamageTypes.Armor = DamageTypes.Armor.LIGHT
 @export var respawn_time: float = 3.0
 @export var invuln_time: float = 2.0
+## Field Repair (Module parts) starts this many seconds after the last damage taken.
+@export var repair_delay: float = 4.0
 
 var health: Health
 var god_mode: bool = false
 var scrap: int = 0
+## The BAG: unequipped parts and loose chips. Equipped parts live in `equipment`.
 var items: Array[Dictionary] = []
+var equipment: Equipment
+## Set by Equipment: 0..1 damage reduction (Armor), HP/s field repair (Module).
+var damage_reduction: float = 0.0
+var repair_rate: float = 0.0
 
 var _car: CarController
 var _hud: PlayerHUD
 var _dead_timer: float = 0.0
 var _invuln: float = 0.0
+var _since_hit: float = 100.0
+var _bag: BagScreen
 
 
 func _ready() -> void:
@@ -39,6 +50,18 @@ func _ready() -> void:
 	_hud = PlayerHUD.new()
 	_hud.status = self
 	layer.add_child(_hud)
+
+	equipment = Equipment.new()
+	equipment.name = "Equipment"
+	add_child(equipment)
+	equipment.setup(self)
+
+	var bag_layer := CanvasLayer.new()
+	bag_layer.layer = 8
+	add_child(bag_layer)
+	_bag = BagScreen.new()
+	_bag.status = self
+	bag_layer.add_child(_bag)
 
 
 func is_alive() -> bool:
@@ -57,7 +80,8 @@ func take_damage(amount: float, at: Vector3, damage_type: int) -> void:
 	if not health.is_alive() or _invuln > 0.0 or god_mode:
 		return
 	var mult := DamageTypes.multiplier(damage_type, armor_type)
-	health.take_damage(amount * mult, at, mult)
+	health.take_damage(amount * mult * (1.0 - clampf(damage_reduction, 0.0, 0.9)), at, mult)
+	_since_hit = 0.0
 	_hud.flash_damage(clampf(amount / 60.0, 0.25, 1.0))
 
 
@@ -89,6 +113,9 @@ func _on_died() -> void:
 
 
 func _process(delta: float) -> void:
+	_since_hit += delta
+	if repair_rate > 0.0 and _since_hit >= repair_delay and health.is_alive() and health.hp < health.max_hp:
+		health.hp = minf(health.hp + repair_rate * delta, health.max_hp)
 	if _dead_timer > 0.0:
 		_dead_timer -= delta
 		if _dead_timer <= 0.0:

@@ -23,6 +23,12 @@ var aim_target: Node3D = null
 ## Damage multiplier of the current gun vs the locked target (1.0 when nothing is locked).
 var aim_effectiveness: float = 1.0
 var swap_timer: float = 0.0
+## Set by Equipment (Phase 4): +% damage for all guns, +% per damage type, rocket blast radius.
+var damage_bonus: float = 0.0
+var type_bonus: Dictionary = {}
+var blast_radius_mult: float = 1.0
+## True while a menu (bag) is open: ESC / Q / E are left to the menu, no firing.
+var ui_open: bool = false
 
 var _car: CarController
 var _turret: Turret
@@ -95,7 +101,37 @@ func reload_ratio() -> float:
 	return 0.0
 
 
+## Garage loadout (Equipment): replace the gun list (Q/E order). Resets cooldowns and heat.
+func set_loadout(list: Array[WeaponData]) -> void:
+	if list.is_empty():
+		return
+	weapons = list
+	_cooldowns.clear()
+	_heat.clear()
+	_overheated.clear()
+	_since_shot.clear()
+	for i in weapons.size():
+		_cooldowns.append(0.0)
+		_heat.append(0.0)
+		_overheated.append(false)
+		_since_shot.append(10.0)
+	current = 0
+	swap_timer = swap_time
+	_turret.set_heat(0.0, false)
+	_turret.set_weapon(weapons[current].kind, swap_time)
+	_projectiles.set_tracer_color(weapons[current].tracer_color)
+
+
+## Menus (bag) call this: show the mouse cursor and hide the crosshair, or go back to aiming.
+func set_menu_open(open: bool) -> void:
+	ui_open = open
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if open else Input.MOUSE_MODE_HIDDEN
+	_crosshair.visible = not open
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if ui_open:
+		return
 	if event.is_action_pressed("toggle_cursor"):
 		var was_hidden := Input.mouse_mode == Input.MOUSE_MODE_HIDDEN
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if was_hidden else Input.MOUSE_MODE_HIDDEN
@@ -132,7 +168,7 @@ func _physics_process(delta: float) -> void:
 
 	var weapon := weapons[current]
 	_cooldowns[current] -= delta
-	var wants_fire := Input.is_action_pressed("fire") and Input.mouse_mode == Input.MOUSE_MODE_HIDDEN and _car.is_alive()
+	var wants_fire := Input.is_action_pressed("fire") and Input.mouse_mode == Input.MOUSE_MODE_HIDDEN and _car.is_alive() and not ui_open
 	if wants_fire and not _overheated[current]:
 		# Accumulator: fires exactly fire_rate shots per second.
 		while _cooldowns[current] <= 0.0:
@@ -219,7 +255,8 @@ func _fire(weapon: WeaponData) -> void:
 	var muzzle := _turret.get_muzzle_transform()
 	var spread := weapon.spread_deg * (1.0 + _heat[current] * weapon.heat_spread_mult)
 	var dir := _spread((-muzzle.basis.z).normalized(), spread)
-	var damage := weapon.damage * randf_range(0.9, 1.1)
+	var bonus := 1.0 + damage_bonus + float(type_bonus.get(weapon.damage_type, 0.0))
+	var damage := weapon.damage * bonus * randf_range(0.9, 1.1)
 
 	match weapon.kind:
 		WeaponData.Kind.BULLET:
@@ -228,6 +265,7 @@ func _fire(weapon: WeaponData) -> void:
 		WeaponData.Kind.ROCKET:
 			var rocket := Rocket.new()
 			rocket.setup(weapon, dir * weapon.projectile_speed, damage, _car.get_rid())
+			rocket.radius_mult = blast_radius_mult
 			_projectiles.add_child(rocket)
 			rocket.global_position = muzzle.origin
 			rocket.look_at(muzzle.origin + dir, Vector3.UP if absf(dir.y) < 0.99 else Vector3.RIGHT)

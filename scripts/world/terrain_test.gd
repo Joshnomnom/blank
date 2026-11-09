@@ -52,6 +52,8 @@ const DIRT_LINE := Color(0.48, 0.35, 0.24)
 
 # Layout in the XZ plane (Rect2 uses x = world X, y = world Z).
 var _start_rect := Rect2(-15.0, 135.0, 30.0, 30.0)
+## TEMPORARY garage zone (Phase 4 step 2), west of the start pad, until towns exist.
+var _garage_rect := Rect2(-37.0, 139.0, 22.0, 22.0)
 var _roads: Array[Rect2] = [
 	Rect2(-6.0, -175.0, 12.0, 310.0),    # north-south main road, z -175..135
 	Rect2(-175.0, -46.0, 350.0, 12.0),   # east-west road, centered z = -40
@@ -93,7 +95,7 @@ func _ready() -> void:
 ## Surface under a world position: &"road", &"dirt" or &"sand".
 func get_surface(pos: Vector3) -> StringName:
 	var p := Vector2(pos.x, pos.z)
-	if _start_rect.has_point(p):
+	if _start_rect.has_point(p) or _garage_rect.has_point(p):
 		return &"road"
 	for r in _roads:
 		if r.has_point(p):
@@ -124,6 +126,7 @@ func _height(x: float, z: float) -> float:
 func _flat_mask(p: Vector2) -> float:
 	# 0 on/near roads, dirt, skidpad, start pad and walls; 1 in open sand.
 	var d := _rect_distance(_start_rect, p)
+	d = minf(d, _rect_distance(_garage_rect, p))
 	for r in _roads:
 		d = minf(d, _rect_distance(r, p))
 	d = minf(d, maxf(p.distance_to(_skidpad_center) - _skidpad_radius, 0.0))
@@ -209,6 +212,11 @@ func _build_terrain() -> void:
 
 func _build_overlays() -> void:
 	_add_road_overlay(_start_rect, 0.03, false)
+	_add_road_overlay(_garage_rect, 0.035, false)
+	var garage := GarageZone.new()
+	garage.name = "GarageZone"
+	add_child(garage)
+	garage.position = Vector3(_garage_rect.get_center().x, 0.0, _garage_rect.get_center().y)
 	_add_road_overlay(_roads[0], 0.04, true)
 	_add_road_overlay(_roads[1], 0.045, true)
 	_add_road_overlay(_roads[2], 0.045, true)

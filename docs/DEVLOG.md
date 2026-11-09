@@ -11,15 +11,15 @@ Related docs: [GAME_DESIGN.md](GAME_DESIGN.md) (overall plan) · [research/](res
 
 | | |
 |---|---|
-| **Phase** | **3: enemies and loot**: implemented + feedback #9 applied; the user says the **direction is OK** (log #31) and it is **committed (commit 4)**. Phases 0, 1, 2 are done and accepted. |
-| **Latest** | **Docs tidied + commit 4 "Phase 3"** pushed (log #31). Feedback #9 content: **B look back**, **attack tokens + circling packs**, **elite Charge Dash** (wall crash → stun punish), **gunner aim laser**, **bullet-hell boss** (BossBrain phases/patterns, orbs, ground strikes) in a **flat arena**. Research: [research/ENEMY_BOSS_DESIGN.md](research/ENEMY_BOSS_DESIGN.md). |
+| **Phase** | **4: RPG core**. Steps 1–3 (bag + part stats + chips, temporary garage, nitro dash) **accepted by the user** ("happy now", log #39) and committed (commit 5). Phases 0–3 done. |
+| **Latest** | **Commit 5: Phase 4 steps 1–3** (bag I, garage F, nitro dash Shift, slerp fix, NitroDash preload fix). Details: How Systems Work → Phase 4 steps 1–3. |
 | **Phase 3 state** | **Phase 3 (all 6 steps) implemented, first play-test done (feedback #9):** player HP/death/respawn + HUD, enemies (Scrap Drone, Raider Gunner, Iron Hauler, boss Dune Tyrant) with an FSM, spawn camps with respawn timers + assist, loot drops (scrap / parts with rarity / chips) + inventory, field boss with a gravestone + boss bar, and **tester instant-spawn keys** (1–4 spawn, 5 respawn camps, K kill all, G god, H heal). See How Systems Work → Phase 3. |
 | **Previous** | **Phase 2 step 2 accepted and committed (commit 3):** Rocket Launcher + Q/E swap + damage × armor types (colored numbers, EFFECTIVE/RESISTED) + crosshair reload ring + machine gun overheat with penalty lockout. Sound is deferred. |
-| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 `7e671e9` = Phase 2 step 1. Commit 3 `c813f9e` = Phase 2 step 2. **Commit 4 `313ad1c` = Phase 3 (enemies, loot, boss, tester tools) + feedback #9.** **Rule: commit + push after the user accepts a step.** |
-| **Next** | **Waiting on the user's go-ahead for the next step.** Planned: **Phase 4, RPG core** (stats, equipping parts from loot, garage UI, save/load). **No gun skills** (log #21). Design reference: [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md). Phase 3 tuning (enemy speed/damage, leash, boss difficulty, loot amounts, enemies stuck on dunes) continues as the user reports it. |
+| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 `7e671e9` = Phase 2 step 1. Commit 3 `c813f9e` = Phase 2 step 2. **Commit 4 `313ad1c` = Phase 3 (enemies, loot, boss, tester tools) + feedback #9.** Commit 5 = Phase 4 steps 1–3 (bag, garage, nitro). **Rule: commit + push after the user accepts a step.** |
+| **Next** | **Waiting on the user's go-ahead.** Proposed next Phase 4 step: **levels, EXP and scrap from monster level** (monster level + rank, player level + EXP bar, level-gap modifier, level-up feedback). Then: real chip rates + soft pity + presentation, repair cost, save/load. Open: dash i-frames? Research: [research/LOOT_ECONOMY_CHIPS.md](research/LOOT_ECONOMY_CHIPS.md). |
 | **Main scene** | `scenes/terrain_test.tscn`. The old flat arena `scenes/test_drive.tscn` still works (car uses "road" grip there). |
 | **After that** | Phase 5 (first content slice: one town, two farming zones, one boss, three chassis, one job tree, NPC shop). The real car model and half-humanoid robot enemy models come when the art pass starts; everything is still placeholder boxes. |
-| **Research** | [research/CAR_PHYSICS_RESEARCH.md](research/CAR_PHYSICS_RESEARCH.md) · [research/DRIVING_GAME_FEEL.md](research/DRIVING_GAME_FEEL.md) · [research/VEHICLE_GROUND_PHYSICS.md](research/VEHICLE_GROUND_PHYSICS.md) · [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md) · [research/ENEMY_SPAWNING_AI.md](research/ENEMY_SPAWNING_AI.md) · [research/ENEMY_BOSS_DESIGN.md](research/ENEMY_BOSS_DESIGN.md) |
+| **Research** | [research/CAR_PHYSICS_RESEARCH.md](research/CAR_PHYSICS_RESEARCH.md) · [research/DRIVING_GAME_FEEL.md](research/DRIVING_GAME_FEEL.md) · [research/VEHICLE_GROUND_PHYSICS.md](research/VEHICLE_GROUND_PHYSICS.md) · [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md) · [research/ENEMY_SPAWNING_AI.md](research/ENEMY_SPAWNING_AI.md) · [research/ENEMY_BOSS_DESIGN.md](research/ENEMY_BOSS_DESIGN.md) · [research/LOOT_ECONOMY_CHIPS.md](research/LOOT_ECONOMY_CHIPS.md) |
 | **Physics layers** | `scripts/combat/layers.gd`: **1 SOLID** (walls, ramps, dummies), **2 GROUND** (terrain; rays only), **4 PLAYER**, **8 ENEMY**. Ramps = 1+2. Car: layer 4, mask 1+8. Enemies: layer 8, mask 1+4. Player shots/aim: 1+2+8; enemy shots: 1+2+4; player rocket explosions damage 1+8; sight blockers 1+2. Car wheel rays 1+2, enemy/pickup ground rays 2. **New objects must follow this.** |
 
 ### Things most likely to need fixing or tuning in Phase 1 (check first)
@@ -82,9 +82,10 @@ CLAUDE.md                  working rules for Claude sessions (incl. the mandator
 docs/
   GAME_DESIGN.md           overall game plan and roadmap
   DEVLOG.md                this file
-  research/
+  research/                (full list: Research row in Current Status)
     CAR_PHYSICS_RESEARCH.md  car physics math, models, tuning values, upgrade plan
     DRIVING_GAME_FEEL.md     game feel: diagnosis of v1, drift controller, juice, Driving v2 plan
+    LOOT_ECONOMY_CHIPS.md    EXP/scrap curves, economy faucets/sinks, chip rates + power budget, rare-drop feel
 scenes/
   terrain_test.tscn        MAIN scene (Phase 1): Terrain + Sedan (spawn 0,0.3,150) + ChaseCamera + DebugOverlay
   test_drive.tscn          Phase 0 flat arena: Arena + Sedan + ChaseCamera + DebugOverlay
@@ -95,6 +96,7 @@ scripts/
   vehicles/sedan_model.gd      class SedanModel: placeholder mesh, wheel spin/steer, body lean, brake lights
   vehicles/car_effects.gd      tire dust/smoke (surface colored, dust trail on loose ground) + drives skid marks
   vehicles/skid_marks.gd       class SkidMarks: fading skid marks (MultiMesh ring buffer + shader, color per surface)
+  vehicles/nitro_dash.gd       class NitroDash (node "Nitro", created by CarController): Shift dash, nitro meter, flames
   vehicles/car_audio.gd        synthesized engine / tire scrub / road squeal / wind (AudioStreamGenerator)
   camera/chase_camera.gd       class ChaseCamera: third-person chase, continuous drift/speed effects, impact shake
   combat/weapon_controller.gd  class WeaponController ("Weapons" node on the car): guns list, Q/E swap, per-gun cooldowns, mouse aim, aim assist + effectiveness, firing, HUD
@@ -115,11 +117,16 @@ scripts/
   combat/orb_projectiles.gd    class OrbProjectiles: shared slow glowing boss orbs (player-only hitbox)
   combat/ground_strike.gd      class GroundStrike: telegraphed ground blast (red disc → explosion, knockback)
   enemies/spawn_camp.gd        class SpawnCamp: pack slots, per-slot random + dynamic respawn, assist calls, boss gravestone
-  loot/loot.gd                 class Loot: rarity table, part/chip/scrap rolls, drop()
+  loot/loot.gd                 class Loot: rarity table, part/chip/scrap rolls (parts/chips built by ItemDB), drop()
+  items/item_db.gd             class ItemDB: slots, stat table + caps, main stats by rarity, affixes, chip defs, make_part/make_chip
+  player/equipment.gd          class Equipment ("Equipment" under Status): equipped parts + chips -> car/HP/gun stats
+  ui/bag_screen.gd             class BagScreen: I-key bag (car slots, bag grid, details/compare, equip/unequip/insert/remove)
+  ui/garage_screen.gd          class GarageScreen: garage tabs LOADOUT / TUNING / BODY KIT
+  world/garage_zone.gd         class GarageZone: TEMPORARY garage pad + shed (visual only), F prompt, opens GarageScreen
   loot/pickup.gd               class Pickup: dropped item (pop-out, bob, beam for Rare+, magnet, collect)
   player/player_status.gd      class PlayerStatus ("Status" on the car): HP, armor, death/respawn, invuln, god mode, inventory
-  debug/test_spawner.gd        class TestSpawner: tester keys (spawn 1–4, respawn camps 5, kill all K, god G, heal H)
-  ui/player_hud.gd             class PlayerHUD: HP bar, scrap/parts, toasts, damage flash, DESTROYED overlay, boss bar
+  debug/test_spawner.gd        class TestSpawner: tester keys (spawn 1–4, respawn camps 5, kill all K, god G, heal H, give part 6 / chip 7 / scrap 8)
+  ui/player_hud.gd             class PlayerHUD: HP bar, scrap/bag count, toasts, damage flash, DESTROYED overlay, boss bar
   ui/crosshair.gd              class Crosshair: crosshair at the mouse; locked = red, EFFECTIVE = gold + label, RESISTED = grey + label
   ui/weapon_hud.gd             class WeaponHUD: bottom-right gun slots (current highlighted, damage type, cooldown overlay, Q/E hints, swap bar)
   world/surfaces.gd            class Surfaces: road / dirt / sand property table
@@ -283,6 +290,40 @@ Camps in terrain_test: 4 drones SW (−90,60); 3 drones (60,−18); 3 gunners + 
 
 **Changed for Phase 3:** physics layers (see Current Status); `Explosion` has a `mask` and damage 0 = visual only; `Projectiles.hit_mask`; rockets and the aim ray use `Layers.PLAYER_SHOTS`; the weapon controller won't fire while dead; `DamageNumber.spawn_text()` ("EVADE"); `WorldHealthBar` (a shared billboard bar).
 
+### Phase 4 step 1: bag screen, part stats, chips (log #34)
+**Bag vs garage (decided log #34):** the **bag (I)** works anywhere: equip/unequip parts, insert/remove chips. The **town garage** (next step) does gun loadout, tuning +1..+10 and visual body kits.
+
+**Items** (`scripts/items/item_db.gd`, plain Dictionaries, ready for JSON saves)
+- Slots: **Engine, Tires, Suspension, Armor Plate, Nitro, Module** (the old 8 drop slot names are gone).
+- Main stat by slot, Common/Uncommon/Rare/Epic/Legendary: Engine **Top Speed** 3/5/7/9/12% · Tires **Grip** 4/6/9/12/15% · Suspension **Knockback Resist** 10/15/20/25/30% · Armor Plate **Max HP** +60/100/150/200/260 · Nitro **Nitro Recharge** 10/15/20/25/30% (was Acceleration until log #37) · Module **Field Repair** 3/5/7/9/12 HP/s.
+- Random affixes = rarity count (0/1/2/3/3) from: top_speed 1–3, accel 2–4, grip 2–4, handling 2–4, max_hp 20–50, armor 2–4, kb_resist 3–6, repair 0.5–1.5, damage 2–5, kinetic 3–6, explosive 3–6 (× (1 + 0.25 × rarity)); never the slot's main stat.
+- Chip sockets: Common 0, Uncommon 50% 1, Rare 1, Epic 1–2, Legendary 2.
+- Car total caps: Damage Reduction 50%, Knockback Resist 60%, Kinetic 30%, Explosive 30%, Blast Radius 40%.
+- **Chips** (one per monster, category-locked): Scrap Drone → Tires: Handling +4% (remove 50 scrap) · Raider Gunner → Module: Kinetic +10% (80) · Iron Hauler → Armor Plate: Max HP +120, Top Speed −4% (trade-off, 150) · **Dune Tyrant → any part, UNIQUE**: Explosive +12%, Blast Radius +20% (400). Insert = free; remove = scrap, the chip returns to the bag.
+- Legendary unique effects are not in yet.
+
+**Equipment** (`scripts/player/equipment.gd`): captures the car's base values once, then on every change sets `top_speed`, `accel_max`, `grip_turn` (grip), `turn_rate` + `drift_turn_rate` (handling), `CarController.knockback_resist`, `Health.max_hp` (a gain is also added to current HP), `PlayerStatus.damage_reduction` (× (1 − r) after the armor-type multiplier), `PlayerStatus.repair_rate` (HP/s after `repair_delay` 4 s without damage), `WeaponController.damage_bonus` / `type_bonus` (damage × (1 + all + type)), `blast_radius_mult` → `Rocket.radius_mult`.
+
+**Bag screen** (`scripts/ui/bag_screen.gd`, CanvasLayer 8): I toggles (ESC also closes). Opening shows the mouse and hides the crosshair (`WeaponController.set_menu_open`); guns don't fire and ignore Q/E/ESC while it's open; **the car can still drive**. Left: 6 slot buttons (rarity color, sockets ◆/◇), guns (read-only), car stats. Middle: bag (chips first, then by rarity), scrap. Right: details, "IF EQUIPPED" car-total diff (green/red), action buttons. Click selects; double-click / right-click equips or unequips.
+
+### Phase 4 step 2: temporary garage (log #35)
+**Zone** (`scripts/world/garage_zone.gd`): `_garage_rect` Rect2(−37, 139, 22, 22) in terrain_test (flattened, road surface, road overlay), zone center (−26, 150), radius 9 m, glowing orange ring, open shed (posts/roof/back wall, **no collision**), "GARAGE" sign. Inside + speed ≤ 3 m/s → "[F] OPEN GARAGE" prompt (otherwise "Stop to open the garage"). Opening: car `controls_enabled = false`, speed 0, `WeaponController.set_menu_open(true)`. F or ESC closes. Bag (I) can't open while the garage is open and vice versa (`WeaponController.ui_open`).
+
+**Loadout** (`Equipment.guns`, `mounted`, `gun_slots` = 2): guns are owned items (`ItemDB.make_gun`: machine_gun, rocket_launcher; shown as Rare). Mount into a slot (swaps if already mounted elsewhere), move, unmount (at least 1 stays). `WeaponController.set_loadout(list)` rebuilds the gun list (resets cooldowns/heat, current = slot 1). `ItemDB.gun_weapon_data(gun)` = fresh WeaponData with tuning applied.
+
+**Tuning** (`Equipment.tune`, rules in `ItemDB`): +1..+10 on guns, equipped parts and bag parts. Part: +6% of the main stat per level (+10 = +60%). Gun: +3% damage per level (+10 = +30%). Success by target level: +1..+4 100%, +5 80%, +6 65%, +7 50%, +8 35%, +9 25%, +10 15%. Cost = 50 × target² × (1 + 0.5 × rarity) scrap (guns count as Rare). Fail = −1 level. Target ≥ +8 and fail → 25% the PART breaks (destroyed; its chips go back to the bag). Guns never break. Names show "+N".
+
+**Body kits** (`SedanModel.KITS`, `PAINT_COLORS`, `set_kit`; `Equipment.kits`, `owned_kits`, `set_kit`): paint (8 colors, 100 scrap each, Rust Red free), front (Bull Bar 150, Ram Plow 300), rear (Lip Spoiler 120, Big Wing 250), roof (Light Bar 150, Roof Rails 120), side (Armor Skirts 200, Side Pipes 180). Buy once, switch for free. Visual only, no collision, no stats.
+
+### Phase 4 step 3: nitro dash (log #37)
+`scripts/vehicles/nitro_dash.gd`, created by `CarController._ready` as child "Nitro" (`car.nitro`).
+- **Input** `nitro`: Shift / gamepad B. Needs: meter ≥ `dash_cost`, `dash_cooldown` 0.5 s passed, controls enabled, alive, speed > −3 m/s. Works on the ground and in the air.
+- **Meter**: `max_nitro` 100, `dash_cost` 34, `regen_per_sec` 9 + `drift_charge_per_sec` 10 while drifting on the ground; × `regen_mult` (Equipment: 1 + Nitro Recharge %).
+- **Dash**: adds `dash_speed_gain` 16 m/s × `power_mult` (1 + Dash Power %) spread over `dash_time` 0.22 s (from ≥ 0 if rolling back). Sets `CarController.boost_hold` = `overspeed_hold` 0.35 s, during which the "over top speed → slow down" drag (`overspeed_decel`) is paused; after that the extra speed bleeds off at 10 m/s².
+- **Feel**: two blue additive flame cones out of the rear bumper (length/width by `flame` 0..1, flicker) + blue OmniLight; `ChaseCamera.add_trauma(0.3)` + new `ChaseCamera.kick_fov(10°)` (decays 14°/s; FOV smoothing now 8/s); HUD nitro bar (right of HP: fill, tick per dash, "NITRO xN [Shift]", flashes white while boosting).
+- **Items**: Nitro slot main stat changed from Acceleration to **Nitro Recharge** 10/15/20/25/30% (cap 100%); new affixes nitro_regen 3–6 and nitro_power ("Dash Power", cap 40%) 3–6. Acceleration is still an affix.
+- No sound yet (sound is deferred). No invulnerability during the dash (open question).
+
 ### Terrain test area (`scripts/world/terrain_test.gd`)
 - 400 × 400 m, 2.5 m grid: 161 × 161 height samples → indexed mesh with normals from neighbor heights, **trimesh collision** (`backface_collision = true`).
 - **Height** = dune noise (FastNoiseLite simplex smooth, freq 0.012, 2 octaves, remapped to 0..1 so it never goes below 0) × amplitude (1.2 m gentle → 5 m dunes in the west) + hills (NW 14 m σ28 at (−110, −110); SE 8 m σ22 at (130, 15)), × **flat mask** (0 within 4 m of roads, dirt, skidpad and start pad, blending to 1 at 22 m; also flat within 4–20 m of the walls).
@@ -401,6 +442,51 @@ Camps in terrain_test: 4 drones SW (−90,60); 3 drones (60,−18); 3 gunners + 
     - Docs tidied: Current Status rows brought up to date (Phase/Next/After that/Research were stale from Phase 2), research list completed.
     - **Commit 4 `313ad1c` "Phase 3: enemies, loot, field boss, tester tools + feedback #9"** pushed to `main`.
     - Next: wait for the user's go-ahead; planned Phase 4 (RPG core).
+
+32. **User request (design talk before Phase 4):** "(1) every monster has EXP and scrap drops, different per monster, higher level higher reward; research so the economy doesn't break; (2) cards: every monster has a very low chance to drop a card that improves a stat when equipped, well balanced, research; (3) research what makes a drop feel rare and valuable."
+    - Research (4 searches) → `docs/research/LOOT_ECONOMY_CHIPS.md`. Proposals (not decided yet):
+      - Monsters get `level` + `rank` (Normal ×1 / Elite ×4 / Boss EXP ×60, scrap ×40). `mob_exp(L) = 12·L^1.5 + 8`, kills per level `8 + 3L + 0.1L²` (~8 min/level at L10, ~70 min at L50, ~24 h to L50). Scrap `4 + 2L` × rank × 0.7–1.3. Level-gap modifier: 100% within ±5, +5%/level above (max 120%), −10%/level below −5, floor 10%.
+      - Economy: faucets ≈ 1.1–1.3 × sinks per tier; all sinks scale with level: **repair + tow fee** (first sinks), tuning/refine (big open-ended), chip removal, market tax, fast travel, cosmetics.
+      - Chips (= cards): normal 0.05%, elite 0.1%, boss 3%; optional soft pity (ramps from 2× to guaranteed at 3× the average kills); flat chips 3–5% of one stat, conditional +10–20% narrow, elite trade-off chips, boss mechanic chips unique-equipped; per-category caps (e.g. +40% vs one armor type); slots 0–2 by rarity; drop bonuses capped +100% with diminishing returns.
+      - Rare feel: beams only Epic+ and chips (Rare beams now ≈ 10/hour, too many); tiered sound/reveal; chip card-flip reveal + unique sound; server-wide announcements; chip album; provenance; longer despawn for Epic+/chips.
+      - Current code chip rates (1% / 2% / 15%) are test values, far above the proposal.
+    - Open questions to the user: chips or cards name; level cap (50 proposed); pity yes/no; level gap on chips (proposed no); death penalty (scrap fee only vs RO-style EXP loss).
+    - No code changed.
+
+33. **Decisions (user):** "1. we call them chips; 2. no level cap; 3. cards have soft pity; 4. killing much lower-level monsters does not reduce card drop chance; 5. dying costs repair."
+    - Recorded in GAME_DESIGN §6 ("Loot, EXP and chips") and the research doc. No level cap checked against the curve: ~218 min per level at L100 (~138 h total), so the growth is a natural soft cap.
+    - Proposed Phase 4 split (one step at a time): **step 1** levels + EXP + scrap formulas (monster level/rank, player level, EXP bar, level-gap modifier, level-up feedback, tester keys); **step 2** chips (real rates, soft pity, chip presentation and beams only Epic+); **step 3** repair cost on damage/death (first scrap sink); then stats + equipping parts, garage UI, save/load.
+    - No code changed. Waiting on the user's go-ahead.
+
+34. **User request:** "we might need to create a garage first so we can test our items and equipment, like a bag screen: (1) press I to open a menu where the player can equip/unequip items, chips, etc.; (2) car part modification like cool parts has to be done in a garage in town."
+    - Clarified with the user: **town garage = visual body kits + tuning +1..+10 + gun mounts/loadout**; **bag stats are real now**; **6 part slots + guns** (Engine, Tires, Suspension, Armor Plate, Nitro, Module).
+    - Built step 1 = **the bag** (How Systems Work → Phase 4 step 1): new `items/item_db.gd`, `player/equipment.gd`, `ui/bag_screen.gd`; `loot.gd` now drops real parts/chips; hooks in `car_controller.gd` (`knockback_resist`), `player_status.gd` (equipment, bag, damage reduction, field repair), `weapon_controller.gd` (damage bonuses, blast radius, `set_menu_open`, `ui_open`), `rocket.gd` (`radius_mult`), `player_hud.gd` ("BAG n [I]"), `input_setup.gd` (I, 6, 7, 8), `test_spawner.gd` (give part / chip / scrap).
+    - Chip drop rates in `enemy_data.gd` are still the test values (1% / 2% / 15%); real rates come with the chip step.
+    - **Not tested.** Watch: UI layout/size at your resolution, double-click behaviour, car feel with big Top Speed/Grip bonuses, HP gain when equipping armor.
+    - Town garage is the next step (not started).
+
+35. **User request:** "do a garage just as a temporary zone; after that I want to add a new mechanic, a nitro dash."
+    - Built step 2 (How Systems Work → Phase 4 step 2): new `world/garage_zone.gd`, `ui/garage_screen.gd`; `item_db.gd` (tuning rules, guns as items, tuned main stat in `part_lines`, "+N" names); `equipment.gd` (guns/loadout, tune, kits); `weapon_controller.gd` (`set_loadout`); `sedan_model.gd` (body kit pieces + paint); `terrain_test.gd` (garage rect: flat, road surface, overlay, zone); `input_setup.gd` (**F = interact**, gamepad X); `bag_screen.gd` (tuned main stat shown, won't open over the garage).
+    - Tuning failure rule follows the research recommendation (WEAPONS_BALANCE_EQUIPMENT.md §4.4): −1 level, break possible only from +8 (no protection item yet).
+    - **Not tested** (neither bag nor garage). Watch: script errors, prompt visibility, body kit piece positions on the car, tuning costs vs current scrap income (use key 8 for +1000 scrap).
+    - **Next mechanic after testing: Nitro Dash** (not started).
+
+36. **Bug report (user, error log):** `car_controller.gd:725 @ _align_body(): The axis Vector3 (0.992168, 0.0, 0.114362) must be normalized` (from `Basis.set_axis_angle`).
+    - Cause: `_up.slerp(target_up, t)` builds its rotation axis from `cross(_up, target_up)`. When the two are almost equal (e.g. flat ground) the cross is ~zero and the normalized axis comes out slightly off (length 0.9975), so Godot rejects it. Old latent bug, not from the garage/bag code.
+    - Fix: normalized lerp instead of slerp (skipped if the blend is ~zero) in `car_controller._align_body` and the same pattern in `enemy.gd` ground snap. **Rule: don't use Vector3.slerp for smoothing up vectors; use lerp + normalized.**
+    - Not re-tested.
+
+37. **User request:** "okay let's add nitro dash."
+    - Built step 3 (How Systems Work → Phase 4 step 3): new `vehicles/nitro_dash.gd`; `car_controller.gd` (`nitro`, `boost_hold` pauses over-speed drag); `chase_camera.gd` (`kick_fov`); `input_setup.gd` (`nitro` = Shift / pad B); `item_db.gd` (Nitro main stat → Nitro Recharge; nitro_regen / nitro_power affixes); `equipment.gd` (regen_mult / power_mult); `player_hud.gd` (nitro bar); `bag_screen.gd` (stats lines); `debug_overlay.gd` (help: 6/7/8, Shift, I, F).
+    - Design choices made by default (tell me to change): forward-only burst, 2 dashes from a full meter, drifting refills faster (GAME_DESIGN combat idea "drifting charges a meter"), air dash allowed, **no i-frames**.
+    - **Not tested.** Watch: dash strength (16 m/s ≈ +58 km/h), how long the extra speed lasts, flame position at the rear bumper, whether drift-charging feels noticeable.
+
+38. **Bug report (user):** `car_controller.gd:174 - Parse Error: Could not find type "NitroDash" in the current scope` (and :222).
+    - Cause: the new `class_name NitroDash` script was created outside the editor and the editor's global class cache hadn't registered it yet, so `car_controller.gd` (which every scene needs) failed to parse.
+    - Fix: `car_controller.gd` now uses `const NitroDashScript := preload("res://scripts/vehicles/nitro_dash.gd")` for the type and `.new()`. **Rule: core scripts that everything depends on should preload new helper scripts by path instead of relying on a fresh class_name.** If "Could not find type X" appears for another new class: Project → Reload Current Project rebuilds the cache.
+    - Not re-tested.
+
+39. **Feedback #11:** after "what is the next step" (test bag/garage/nitro first), the user said: "happy now". **Phase 4 steps 1–3 accepted** (bag, garage, nitro dash, plus the slerp and NitroDash preload fixes). Committed and pushed as commit 5. No tuning changes requested. Next step waits on the user's go-ahead (proposed: levels/EXP/scrap).
 
 **Not done / known unknowns**
 - Phase 3 + feedback #9 changes: the user played and says the direction is OK, but no detailed tuning feedback yet. Likely tuning: enemy speeds and damage, leash ranges, the boss's difficulty, loot amounts, enemies getting stuck on dunes or walls (straight-line chasing, no pathfinding).

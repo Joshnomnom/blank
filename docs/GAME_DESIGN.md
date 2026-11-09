@@ -75,6 +75,22 @@ It takes the structure of classic MMORPGs like Ragnarok Online (levels, stats, j
 
 **Combat idea:** driving well powers your combat. Drifting charges a meter for skills and boost, ramming deals damage based on speed and mass, and dodging is done by driving. This keeps the driving and the RPG connected instead of separate.
 
+**Loot, EXP and chips (decided 2026-11-09, research: [research/LOOT_ECONOMY_CHIPS.md](research/LOOT_ECONOMY_CHIPS.md)):**
+- Every monster has a **level** and a **rank** (Normal / Elite / Boss). EXP and scrap come from formulas of level × rank, so higher level = higher reward. Proposed: `mob_exp(L) = 12·L^1.5 + 8`, scrap `4 + 2L` (× 0.7–1.3), rank × 1 / 4 / boss EXP 60 & scrap 40 (shared by damage).
+- **No level cap.** The curve keeps rising (time per level grows ~L²: ~70 min at L50, ~3.6 h at L100), which acts as a natural soft cap.
+- **Level-gap modifier on EXP and scrap** (full within ±5, bonus for higher mobs, down to 10% for far-lower mobs). **Chip drop chance is NOT reduced by level gap** (farming a specific monster for its chip is the core loop).
+- **Economy:** faucets ≈ 1.1–1.3 × sinks per tier; every sink scales with level.
+- **Death costs repair only** (scrap). No EXP loss, no item loss.
+- **Chips** (the name is final; our version of Ragnarok cards): one per monster type, normal 0.05% / elite 0.1% / boss 3%, with **soft pity** per player per monster type (ramps from 2× to guaranteed at 3× the average kills). Power budget: flat 3–5%, conditional +10–20% (narrow), elite chips with a trade-off, boss chips change a mechanic (unique-equipped); per-category caps; 0–2 slots by item rarity; category-locked; removal costs scrap.
+- **Rare feel:** beams only for Epic+ and chips; a unique chip sound + card-flip reveal; server-wide announcement for chips and Legendaries; chip album; provenance on items.
+
+**Bag vs garage (decided 2026-11-09):**
+- **Bag (I key), anywhere:** equip / unequip car parts, insert / remove chips (removal costs scrap). The car keeps driving while it's open.
+- **Garage (in town only):** gun loadout (which guns are mounted), **tuning +1..+10** (the big scrap sink), and **visual body kits** (looks only, no stats).
+- Part slots: **Engine, Tires, Suspension, Armor Plate, Nitro, Module** + gun mounts. Equipped parts change the car's real stats.
+- For now the garage is a **temporary zone** next to the start pad (no towns yet).
+- **Nitro Dash (added 2026-11-09):** Shift = a short forward speed burst past top speed, paid from a nitro meter (2 dashes when full). The meter refills over time and **faster while drifting** (driving well powers combat). Nitro parts improve recharge and dash power. Used to escape, close distance, or slip through boss patterns.
+
 ## 7. Side activities (not the core)
 
 - **Race events:** circuit and sprint across the wasteland
@@ -115,6 +131,6 @@ It takes the structure of classic MMORPGs like Ragnarok Online (levels, stats, j
 - Game title
 - Fixed vs rotating camera option for players
 - Mobile browser support (touch controls)?
-- How death works (respawn at garage? lose durability? drop items?)
+- ~~How death works~~ → decided 2026-11-09: repair cost only (see §6 Loot, EXP and chips). Respawn location (garage vs nearby) still open.
 - Monetization model (cosmetics only?)
 - Art pipeline for 3D car models

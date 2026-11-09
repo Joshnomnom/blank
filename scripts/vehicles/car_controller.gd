@@ -166,6 +166,14 @@ var vertical_speed: float = 0.0              ## m/s, in the air
 var current_surface: StringName = &"road"
 ## False while destroyed (Phase 3): all driving input reads as zero.
 var controls_enabled: bool = true
+## 0..1, from Suspension parts (Equipment): knockback impulses are reduced by this much.
+var knockback_resist: float = 0.0
+## Seconds left in which over-top-speed drag is paused (set by the nitro dash).
+var boost_hold: float = 0.0
+## Nitro dash (Phase 4 step 3), created in _ready as child "Nitro".
+## Loaded by path (not the global class name) so a stale editor class cache can't break the car.
+const NitroDashScript := preload("res://scripts/vehicles/nitro_dash.gd")
+var nitro: NitroDashScript
 
 var _spawn_transform: Transform3D
 var _surface_map: Node
@@ -213,6 +221,9 @@ func _ready() -> void:
 	if _surface_map:
 		current_surface = _surface_map.call("get_surface", global_position)
 	_snap_surface()
+	nitro = NitroDashScript.new()
+	nitro.name = "Nitro"
+	add_child(nitro)
 
 
 func get_speed_kmh() -> float:
@@ -237,6 +248,7 @@ func take_damage(amount: float, at: Vector3, damage_type: int = DamageTypes.Type
 
 ## Shove the car (rams, shockwaves). Horizontal only; mixes into the travel velocity.
 func apply_knockback(impulse: Vector3) -> void:
+	impulse *= 1.0 - clampf(knockback_resist, 0.0, 0.9)
 	var v := travel_dir * speed + Vector3(impulse.x, 0.0, impulse.z)
 	var length := v.length()
 	if length > 0.1:
@@ -300,6 +312,7 @@ func _physics_process(delta: float) -> void:
 
 	_time += delta
 	_impact_cooldown = maxf(_impact_cooldown - delta, 0.0)
+	boost_hold = maxf(boost_hold - delta, 0.0)
 
 	_read_input(delta)
 	_update_surface(delta)
@@ -441,7 +454,7 @@ func _update_longitudinal(delta: float) -> void:
 		speed = move_toward(speed, 0.0, handbrake_decel * delta)
 
 	# Surface: too fast for this surface (e.g. road -> sand) and rolling drag.
-	if speed > top:
+	if speed > top and boost_hold <= 0.0:
 		speed = move_toward(speed, top, overspeed_decel * delta)
 	speed = move_toward(speed, 0.0, _s_drag * delta)
 
@@ -719,7 +732,11 @@ func _align_body(delta: float) -> void:
 		var tilted_fwd := fwd * cos(flight_pitch) + Vector3.UP * sin(flight_pitch)
 		target_up = right.cross(tilted_fwd).normalized()
 		rate = air_align_speed
-	_up = _up.slerp(target_up, 1.0 - exp(-rate * delta)).normalized()
+	# Normalized lerp, not slerp: slerp builds an axis from cross(_up, target_up), which is
+	# ~zero when the two are almost equal (flat ground) -> "axis must be normalized" error.
+	var blended := _up.lerp(target_up, 1.0 - exp(-rate * delta))
+	if blended.length_squared() > 0.000001:
+		_up = blended.normalized()
 
 	var f := _flat_forward()
 	var back := -(f - _up * f.dot(_up)).normalized()
