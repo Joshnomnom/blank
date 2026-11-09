@@ -15,7 +15,7 @@ Related docs: [GAME_DESIGN.md](GAME_DESIGN.md) (overall plan) · [research/](res
 | **Latest** | **Docs tidied + commit 4 "Phase 3"** pushed (log #31). Feedback #9 content: **B look back**, **attack tokens + circling packs**, **elite Charge Dash** (wall crash → stun punish), **gunner aim laser**, **bullet-hell boss** (BossBrain phases/patterns, orbs, ground strikes) in a **flat arena**. Research: [research/ENEMY_BOSS_DESIGN.md](research/ENEMY_BOSS_DESIGN.md). |
 | **Phase 3 state** | **Phase 3 (all 6 steps) implemented, first play-test done (feedback #9):** player HP/death/respawn + HUD, enemies (Scrap Drone, Raider Gunner, Iron Hauler, boss Dune Tyrant) with an FSM, spawn camps with respawn timers + assist, loot drops (scrap / parts with rarity / chips) + inventory, field boss with a gravestone + boss bar, and **tester instant-spawn keys** (1–4 spawn, 5 respawn camps, K kill all, G god, H heal). See How Systems Work → Phase 3. |
 | **Previous** | **Phase 2 step 2 accepted and committed (commit 3):** Rocket Launcher + Q/E swap + damage × armor types (colored numbers, EFFECTIVE/RESISTED) + crosshair reload ring + machine gun overheat with penalty lockout. Sound is deferred. |
-| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 `7e671e9` = Phase 2 step 1. Commit 3 `c813f9e` = Phase 2 step 2. **Commit 4 = Phase 3 (enemies, loot, boss, tester tools) + feedback #9.** **Rule: commit + push after the user accepts a step.** |
+| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 `7e671e9` = Phase 2 step 1. Commit 3 `c813f9e` = Phase 2 step 2. **Commit 4 `313ad1c` = Phase 3 (enemies, loot, boss, tester tools) + feedback #9.** **Rule: commit + push after the user accepts a step.** |
 | **Next** | **Waiting on the user's go-ahead for the next step.** Planned: **Phase 4, RPG core** (stats, equipping parts from loot, garage UI, save/load). **No gun skills** (log #21). Design reference: [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md). Phase 3 tuning (enemy speed/damage, leash, boss difficulty, loot amounts, enemies stuck on dunes) continues as the user reports it. |
 | **Main scene** | `scenes/terrain_test.tscn`. The old flat arena `scenes/test_drive.tscn` still works (car uses "road" grip there). |
 | **After that** | Phase 5 (first content slice: one town, two farming zones, one boss, three chassis, one job tree, NPC shop). The real car model and half-humanoid robot enemy models come when the art pass starts; everything is still placeholder boxes. |
@@ -399,7 +399,7 @@ Camps in terrain_test: 4 drones SW (−90,60); 3 drones (60,−18); 3 gunners + 
 
 31. **Feedback #10 (2026-11-09):** "the direction is starting to be okay now; tidy the docs and put the code on git before the next step." **Phase 3 direction accepted** (no detailed tuning report yet).
     - Docs tidied: Current Status rows brought up to date (Phase/Next/After that/Research were stale from Phase 2), research list completed.
-    - **Commit 4 "Phase 3: enemies, loot, field boss, tester tools + feedback #9"** pushed to `main`.
+    - **Commit 4 `313ad1c` "Phase 3: enemies, loot, field boss, tester tools + feedback #9"** pushed to `main`.
     - Next: wait for the user's go-ahead; planned Phase 4 (RPG core).
 
 **Not done / known unknowns**
