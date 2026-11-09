@@ -70,6 +70,7 @@ var _side: float = 0.0       ## smoothed -1..1 slide side (drift angle based)
 var _tighten: float = 0.0    ## smoothed 0..drift_tighten
 var _trauma: float = 0.0
 var _time: float = 0.0
+var _looking_back: bool = false
 var _noise := FastNoiseLite.new()
 
 
@@ -111,6 +112,14 @@ func _process(delta: float) -> void:
 			side_target = clampf(_car.drift_angle / deg_to_rad(drift_effect_full_angle), -1.0, 1.0)
 		if _car.is_drifting:
 			tighten_target = drift_tighten * clampf(_car.drift_time / drift_tighten_time, 0.0, 1.0)
+
+	# Hold B: look back (instant 180° flip, instant flip back on release).
+	var looking_back := Input.is_action_pressed("look_back")
+	if looking_back:
+		target_yaw += PI
+	if looking_back != _looking_back:
+		_looking_back = looking_back
+		_yaw = target_yaw
 
 	var effect_blend := 1.0 - exp(-drift_effect_speed * delta)
 	_side = lerpf(_side, side_target, effect_blend)

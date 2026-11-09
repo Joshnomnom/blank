@@ -28,4 +28,4 @@ Nothing is finished until it's written down. Sessions can end at any time (stopp
 - GDScript only. Placeholder art is built in code. Input actions are registered in `scripts/core/input_setup.gd`.
 - Tunable gameplay values go in `@export` variables.
 - Cars face −Z.
-- Physics layers: 1 = solid (walls, ramps; car body collides), 2 = ground (terrain; only the car's wheel rays touch it). Ramps use 1+2. New world geometry must follow this, or the car chassis can get stuck on the ground.
+- Physics layers (constants in `scripts/combat/layers.gd`): 1 SOLID (walls, ramps, dummies), 2 GROUND (terrain; only rays touch it), 4 PLAYER (player cars), 8 ENEMY. Ramps use 1+2. The car collides with SOLID + ENEMY; enemies collide with SOLID + PLAYER; nothing's body collides with GROUND (rays snap to it). Player shots hit 1+2+8, enemy shots 1+2+4. New geometry/objects must follow this.

@@ -132,7 +132,7 @@ func _physics_process(delta: float) -> void:
 
 	var weapon := weapons[current]
 	_cooldowns[current] -= delta
-	var wants_fire := Input.is_action_pressed("fire") and Input.mouse_mode == Input.MOUSE_MODE_HIDDEN
+	var wants_fire := Input.is_action_pressed("fire") and Input.mouse_mode == Input.MOUSE_MODE_HIDDEN and _car.is_alive()
 	if wants_fire and not _overheated[current]:
 		# Accumulator: fires exactly fire_rate shots per second.
 		while _cooldowns[current] <= 0.0:
@@ -210,7 +210,7 @@ func _update_aim() -> void:
 	var from := cam.project_ray_origin(mouse)
 	var dir := cam.project_ray_normal(mouse)
 	var to := from + dir * aim_ray_length
-	var query := PhysicsRayQueryParameters3D.create(from, to, 3, [_car.get_rid()])
+	var query := PhysicsRayQueryParameters3D.create(from, to, Layers.PLAYER_SHOTS, [_car.get_rid()])
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	aim_point = hit["position"] if not hit.is_empty() else to
 

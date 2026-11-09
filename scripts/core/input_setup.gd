@@ -19,6 +19,16 @@ func _ready() -> void:
 	_add_action("weapon_prev", [KEY_Q], [JOY_BUTTON_LEFT_SHOULDER], [])
 	_add_action("weapon_next", [KEY_E], [JOY_BUTTON_RIGHT_SHOULDER], [])
 	_add_action("toggle_cursor", [KEY_ESCAPE], [], [])
+	_add_action("look_back", [KEY_B], [JOY_BUTTON_Y], [])
+	# Tester tools (Phase 3, scripts/debug/test_spawner.gd).
+	_add_action("debug_spawn_1", [KEY_1], [], [])
+	_add_action("debug_spawn_2", [KEY_2], [], [])
+	_add_action("debug_spawn_3", [KEY_3], [], [])
+	_add_action("debug_spawn_4", [KEY_4], [], [])
+	_add_action("debug_respawn_camps", [KEY_5], [], [])
+	_add_action("debug_kill_all", [KEY_K], [], [])
+	_add_action("debug_god", [KEY_G], [], [])
+	_add_action("debug_heal", [KEY_H], [], [])
 
 
 func _add_action(action: StringName, keys: Array, buttons: Array, axes: Array, mouse_buttons: Array = []) -> void:

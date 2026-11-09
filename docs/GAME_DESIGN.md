@@ -58,8 +58,8 @@ It takes the structure of classic MMORPGs like Ragnarok Online (levels, stats, j
 | Armor and gear | **Parts:** engine, turbo, tires, suspension, nitro, armor plating |
 | Cards | **Chips / decals** dropped by enemies, slotted into parts for bonuses |
 | Refine +1 to +10 (can break) | **Tuning:** upgrades with a chance to fail. Main money sink. |
-| Monsters and fields | **Hostile machines and creatures:** scrap drones, raider gangs, sand worms, mutant beasts |
-| MVP bosses | **Giant boss machines** on spawn timers, fought by groups |
+| Monsters and fields | **Hostile machines and creatures:** scrap drones, raider gangs, sand worms, mutant beasts. **Enemy look (decided): half-humanoid robot vehicles** (a robot upper body on a wheeled/tracked vehicle base). Placeholder boxes until the art phase. |
+| MVP bosses | **Giant boss machines** on spawn timers, fought by groups. **Boss fight style (decided): "Space Invaders on wheels"**: in a flat arena the boss keeps its distance and throws readable patterns (orb fans, rings with gaps, spirals, telegraphed mortars, charge dashes). You dodge by driving and fire back. Phases change the fight. |
 | Kafra / warps | **Garage network:** storage, repair, fast travel between towns |
 | Vending | **Player market / roadside stalls** |
 | Guilds and War of Emperium | **Crews and Territory War** over towns and districts |

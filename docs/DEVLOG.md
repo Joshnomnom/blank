@@ -11,14 +11,16 @@ Related docs: [GAME_DESIGN.md](GAME_DESIGN.md) (overall plan) · [research/](res
 
 | | |
 |---|---|
-| **Phase** | **2: combat basics** (step 1: one gun). Phases 0 (driving) and 1 (terrain) are done and accepted. |
-| **State** | **Phase 2 step 2 done and accepted ("feels okay now"), committed:** Rocket Launcher (explosive area damage, 1.5 s cooldown) + **Q/E gun swap** (weapon HUD) + **damage types × armor types** (golden-orange numbers and "EFFECTIVE" crosshair when effective; small dim-white numbers and "RESISTED" when resisted) + **crosshair reload ring** + **machine gun overheat** (4 s fire → **~4.1 s penalty lockout** vs ~2.25 s if you stop in time; barrel glow, steam, countdown). Step 1 (machine gun) is accepted and committed. Sound is deferred. |
-| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 = Phase 2 step 1. Commit 3 = Phase 2 step 2. **Rule: commit + push after the user accepts a step.** |
-| **Next** | User to choose: the next attack type (Shotgun → Flamethrower → Railgun…) or Phase 3 enemies. **No gun skills** (log #21). Design reference: [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md). |
-| **Main scene** | `scenes/terrain_test.tscn` (new). The old flat arena `scenes/test_drive.tscn` still works (car uses "road" grip there). |
-| **After that** | Phase 2, combat basics (one weapon, a dummy target). The car model is planned around Phase 2–3, when weapon mounts need a real shape. |
-| **Research** | [research/CAR_PHYSICS_RESEARCH.md](research/CAR_PHYSICS_RESEARCH.md) (physics math; §8 surfaces) · [research/DRIVING_GAME_FEEL.md](research/DRIVING_GAME_FEEL.md) (game feel, Driving v2 design) · [research/VEHICLE_GROUND_PHYSICS.md](research/VEHICLE_GROUND_PHYSICS.md) (ground-following approaches, pitfalls, our bug, decision to keep kinematic + rays) |
-| **Physics layers** | **Layer 1 = solid** (walls, ramps; the car body collides). **Layer 2 = ground** (terrain, flat ground; only wheel rays touch it). Ramps = 1+2. The car body `collision_mask = 1`, the rays use `ground_probe_mask = 3`. **New ground/static objects must follow this.** |
+| **Phase** | **3: enemies and loot**: implemented + feedback #9 applied; the user says the **direction is OK** (log #31) and it is **committed (commit 4)**. Phases 0, 1, 2 are done and accepted. |
+| **Latest** | **Docs tidied + commit 4 "Phase 3"** pushed (log #31). Feedback #9 content: **B look back**, **attack tokens + circling packs**, **elite Charge Dash** (wall crash → stun punish), **gunner aim laser**, **bullet-hell boss** (BossBrain phases/patterns, orbs, ground strikes) in a **flat arena**. Research: [research/ENEMY_BOSS_DESIGN.md](research/ENEMY_BOSS_DESIGN.md). |
+| **Phase 3 state** | **Phase 3 (all 6 steps) implemented, first play-test done (feedback #9):** player HP/death/respawn + HUD, enemies (Scrap Drone, Raider Gunner, Iron Hauler, boss Dune Tyrant) with an FSM, spawn camps with respawn timers + assist, loot drops (scrap / parts with rarity / chips) + inventory, field boss with a gravestone + boss bar, and **tester instant-spawn keys** (1–4 spawn, 5 respawn camps, K kill all, G god, H heal). See How Systems Work → Phase 3. |
+| **Previous** | **Phase 2 step 2 accepted and committed (commit 3):** Rocket Launcher + Q/E swap + damage × armor types (colored numbers, EFFECTIVE/RESISTED) + crosshair reload ring + machine gun overheat with penalty lockout. Sound is deferred. |
+| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 `7e671e9` = Phase 2 step 1. Commit 3 `c813f9e` = Phase 2 step 2. **Commit 4 = Phase 3 (enemies, loot, boss, tester tools) + feedback #9.** **Rule: commit + push after the user accepts a step.** |
+| **Next** | **Waiting on the user's go-ahead for the next step.** Planned: **Phase 4, RPG core** (stats, equipping parts from loot, garage UI, save/load). **No gun skills** (log #21). Design reference: [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md). Phase 3 tuning (enemy speed/damage, leash, boss difficulty, loot amounts, enemies stuck on dunes) continues as the user reports it. |
+| **Main scene** | `scenes/terrain_test.tscn`. The old flat arena `scenes/test_drive.tscn` still works (car uses "road" grip there). |
+| **After that** | Phase 5 (first content slice: one town, two farming zones, one boss, three chassis, one job tree, NPC shop). The real car model and half-humanoid robot enemy models come when the art pass starts; everything is still placeholder boxes. |
+| **Research** | [research/CAR_PHYSICS_RESEARCH.md](research/CAR_PHYSICS_RESEARCH.md) · [research/DRIVING_GAME_FEEL.md](research/DRIVING_GAME_FEEL.md) · [research/VEHICLE_GROUND_PHYSICS.md](research/VEHICLE_GROUND_PHYSICS.md) · [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md) · [research/ENEMY_SPAWNING_AI.md](research/ENEMY_SPAWNING_AI.md) · [research/ENEMY_BOSS_DESIGN.md](research/ENEMY_BOSS_DESIGN.md) |
+| **Physics layers** | `scripts/combat/layers.gd`: **1 SOLID** (walls, ramps, dummies), **2 GROUND** (terrain; rays only), **4 PLAYER**, **8 ENEMY**. Ramps = 1+2. Car: layer 4, mask 1+8. Enemies: layer 8, mask 1+4. Player shots/aim: 1+2+8; enemy shots: 1+2+4; player rocket explosions damage 1+8; sight blockers 1+2. Car wheel rays 1+2, enemy/pickup ground rays 2. **New objects must follow this.** |
 
 ### Things most likely to need fixing or tuning in Phase 1 (check first)
 - **New ground system** (raycast suspension, never run): watch for jitter on dunes (2.5 m mesh facets), the car leaving the ground too easily or too rarely over crests (`launch_factor`), or the box hitting steep ground (it's raised 0.4 m).
@@ -41,6 +43,10 @@ Related docs: [GAME_DESIGN.md](GAME_DESIGN.md) (overall plan) · [research/](res
 | Mouse | | Aim the roof turret (crosshair turns red when aim assist locks a target) |
 | LMB (hold) | | Fire the current gun |
 | Q / E | LB / RB | Previous / next gun (0.35 s swap) |
+| 1 / 2 / 3 / 4 | | **Tester:** spawn Scrap Drone / Raider Gunner / Iron Hauler / Dune Tyrant boss at the crosshair (15–70 m away; no respawn) |
+| 5 | | **Tester:** respawn every dead camp member now (incl. the boss) |
+| K / G / H | | **Tester:** kill all enemies (drop loot) / god mode toggle / heal to full |
+| B (hold) | Y | Look back (camera flips 180°) |
 | ESC | | Show/hide the mouse cursor (firing is disabled while the cursor is shown) |
 | R | Back | Reset car to spawn |
 | M | | Mute / unmute sound |
@@ -101,6 +107,19 @@ scripts/
   combat/health.gd             class Health: reusable HP component (damaged / died signals)
   combat/target_dummy.gd       class TargetDummy: training target (HP bar shader, hit flash, death burst, respawn)
   combat/damage_number.gd      class DamageNumber: floating Label3D damage numbers
+  combat/layers.gd             class Layers: physics layer constants (SOLID 1, GROUND 2, PLAYER 4, ENEMY 8 + masks)
+  combat/world_health_bar.gd   class WorldHealthBar: billboard HP bar quad (shader)
+  enemies/enemy.gd             class Enemy: FSM (idle/alert/combat/return/dead), melee/ranged/boss attacks, leash, box robot-vehicle model
+  enemies/enemy_data.gd        class EnemyData: stats + behavior flags + loot; make(id): scrap_drone, raider_gunner, iron_hauler, dune_tyrant
+  enemies/boss_brain.gd        class BossBrain: boss phases + bullet-hell patterns (fan, ring w/ gap, mortar, spiral, charge, shock)
+  combat/orb_projectiles.gd    class OrbProjectiles: shared slow glowing boss orbs (player-only hitbox)
+  combat/ground_strike.gd      class GroundStrike: telegraphed ground blast (red disc → explosion, knockback)
+  enemies/spawn_camp.gd        class SpawnCamp: pack slots, per-slot random + dynamic respawn, assist calls, boss gravestone
+  loot/loot.gd                 class Loot: rarity table, part/chip/scrap rolls, drop()
+  loot/pickup.gd               class Pickup: dropped item (pop-out, bob, beam for Rare+, magnet, collect)
+  player/player_status.gd      class PlayerStatus ("Status" on the car): HP, armor, death/respawn, invuln, god mode, inventory
+  debug/test_spawner.gd        class TestSpawner: tester keys (spawn 1–4, respawn camps 5, kill all K, god G, heal H)
+  ui/player_hud.gd             class PlayerHUD: HP bar, scrap/parts, toasts, damage flash, DESTROYED overlay, boss bar
   ui/crosshair.gd              class Crosshair: crosshair at the mouse; locked = red, EFFECTIVE = gold + label, RESISTED = grey + label
   ui/weapon_hud.gd             class WeaponHUD: bottom-right gun slots (current highlighted, damage type, cooldown overlay, Q/E hints, swap bar)
   world/surfaces.gd            class Surfaces: road / dirt / sand property table
@@ -227,6 +246,43 @@ Also: dust colour (road light grey, dirt brown, sand tan) and skid colour index 
 - **WeaponHUD**: bottom-right slots (190 × 62) with name, damage-type tag (colored), a gold border on the active slot, a dark cooldown overlay + seconds (only for guns with a cooldown > 0.3 s), Q/E key boxes at the ends, a swap progress bar, and the hint "LMB fire · Q/E swap · ESC cursor".
 - **Dummies** now: LIGHT at (−25,115), (−35,85), (−20,55) + **a tight group of 3 LIGHT** at (40,128), (44.5,131), (37,133) for splash tests; HEAVY (armor plates, steel blue) at (25,112), (30,70), and the 2000 HP tank at (−60,125).
 
+### Phase 3: enemies, player HP, spawning, loot, boss, tester tools
+Research basis: `docs/research/ENEMY_SPAWNING_AI.md`. Enemy look (final art): half-humanoid robot vehicles; now boxes.
+
+**Player HP** (`scripts/player/player_status.gd`, node "Status" on the Sedan after Weapons; `scripts/ui/player_hud.gd`)
+- 600 HP, armor LIGHT (enemy kinetic damage ×1.25, explosive ×1.0). `CarController.take_damage()` forwards here; damage × armor multiplier → Health. A red screen flash scales with the hit size.
+- Destroyed: `controls_enabled = false` (all inputs zero, no firing), an explosion, a "DESTROYED / Respawning in X" overlay, then after 3 s `reset_to_spawn()` + full HP + **2 s invulnerability** (the car blinks).
+- `god_mode`, `heal_full()`, inventory: `scrap` (int) + `items` (Array of dicts), `collect(item)` → toast in the rarity color.
+- HUD: HP bar bottom-left (green → red), "SCRAP n  PARTS n [GOD MODE]", toasts stacked above (3 s fade), **boss bar top-center** while a boss is in combat.
+- `CarController` gained: group "player", layer PLAYER / mask SOLID+ENEMY, `is_alive()`, `get_aim_point()`, `take_damage()`, `apply_knockback(impulse)` (mixes into the travel velocity; +y launches), `collect()`, `controls_enabled`.
+
+**Enemy** (`scripts/enemies/enemy.gd`, data `enemy_data.gd`), a CharacterBody3D (floating), layer ENEMY, mask SOLID+PLAYER, groups targets/enemies(/bosses)
+- **FSM:** IDLE (wander within the camp radius; aggressive ones scan every 0.25 s: sight radius + LoS raycast) → **ALERT** (stop, face, yellow "!" for 0.5 s) → COMBAT → RETURN (leash) → IDLE; DEAD.
+- Passive mobs engage only when damaged; first hit → COMBAT immediately + `camp.on_member_attacked()` (assist).
+- **COMBAT styles:** MELEE = chase, ram when within reach (damage + knockback + a small spark explosion), then back off 0.7 s at an angle and come again. RANGED = keep 20–34 m, strafe (flip every 1.5–3 s), shoot when in LoS and range (slow red tracer bullets, 45 m/s, dodgeable). BOSS = melee + a 3-bullet cannon volley (2.5 s cd, 8–60 m) + **shockwave**: a red ground ring grows for 1.2 s (telegraph), then a blast (radius 12, 60 dmg, knockback + small launch).
+- **Leash:** beyond `leash_range` from home, OR no damage for `aggro_timeout` AND no sight for 3 s, OR the player is dead → RETURN: 1.6× speed home, **invulnerable** (hits show "EVADE"), regen 40%/s, then reset to full HP.
+- **Movement:** vehicle-like (turn rate, accel, slows on sharp turns), surface multiplier (sand 0.8, dirt 0.9), separation from other enemies, ground snap by a ray (layer GROUND) + tilt to the normal. Enemy bullets come from one shared `Projectiles` node (group "enemy_shots", hit mask ENEMY_SHOTS, red, thicker tracers).
+- Hit feedback = same as dummies (damage numbers with effectiveness colors, white flash, `WorldHealthBar`). Name label + colored armor label above.
+- **Death:** explosion visual, `Loot.drop()`, camp notified, freed.
+- Placeholder model: a dark wheeled base + 4 wheels, robot torso, head with an eye strip (red = aggressive, yellow = passive), arms; melee types have a front ram plow, ranged types a gun arm. Size × `scale`.
+
+| Enemy | Armor | HP | Speed | Behavior | Attack | Loot |
+|---|---|---|---|---|---|---|
+| Scrap Drone | LIGHT | 150 | 30 | aggressive, assist, sight 30, leash 120 | ram 15, cd 1.2, knock 10 | 3–8 scrap, 20% part, 1% chip |
+| Raider Gunner | LIGHT | 220 | 25 | aggressive, assist, sight 40, leash 130 | bullets 12, cd 1.1, range 50, keeps 20–34 m | 5–12, 30%, 1% |
+| Iron Hauler | HEAVY | 800 | 18 | **passive**, assist, leash 110 | ram 35, cd 2, knock 22 | 15–30, 60% (+rarity), 2% |
+| **Dune Tyrant (boss)** | HEAVY | 6000 | 20 | aggressive, sight 50, leash 90, timeout 12 | ram 45 / volley 3×18 / shockwave 60 | 150–250, 3 rolls (big rarity bonus), 15% chip |
+All are slower than the car's road top speed (42 m/s): driving away always works.
+
+**SpawnCamp** (`scripts/enemies/spawn_camp.gd`): slots = `members` ids; **per-slot respawn = random [min, max] × dynamic factor** (players within radius+150 m: up to 2× faster at 4 players; ≤1 alive in a multi-slot pack: ×0.7), floor 8 s; never spawns within `min_player_distance` (30 m, boss 40 m) + radius of the player (retries every 1 s). Assist: members within 25 m of the attacked one join after 0.2–0.6 s. **Boss gravestone** (`show_gravestone`): stone + cross + label "Name / Destroyed at HH:MM:SS / Respawn in m:ss".
+Camps in terrain_test: 4 drones SW (−90,60); 3 drones (60,−18); 3 gunners + 1 drone W (−125,5); Iron Hauler + 3 drones SE (125,45); **Dune Tyrant on the NW hill (−110,−110)**, test respawn 3–5 min (real: 60–120 min).
+
+**Loot** (`scripts/loot/loot.gd`, `pickup.gd`): always scrap; per item roll: a part "Prefix Slot" (Rusty/Salvaged/Tuned/Military/Prototype × Engine/Tires/Armor Plate/…) with rarity Common 70 / Uncommon 20 / Rare 8 / Epic 1.8 / Legendary 0.2 (the non-common weights × (1 + rarity_bonus)); chip "<Enemy> Chip" (Epic purple). Pickups pop out of the wreck in an arc, then bob and spin; parts and chips have a name label; **Rare+ and chips get a light beam**; magnet within 9 m, collected at 2.2 m → toast; despawn after 90 s. Stats for parts and chips come in Phase 4.
+
+**Tester tools** (`scripts/debug/test_spawner.gd`, created by terrain_test): 1–4 spawn an enemy at the crosshair aim point (clamped 15–70 m from the car, snapped to the ground, no camp → no respawn); 5 respawn all dead camp members now; K kill all (with loot); G god mode; H heal.
+
+**Changed for Phase 3:** physics layers (see Current Status); `Explosion` has a `mask` and damage 0 = visual only; `Projectiles.hit_mask`; rockets and the aim ray use `Layers.PLAYER_SHOTS`; the weapon controller won't fire while dead; `DamageNumber.spawn_text()` ("EVADE"); `WorldHealthBar` (a shared billboard bar).
+
 ### Terrain test area (`scripts/world/terrain_test.gd`)
 - 400 × 400 m, 2.5 m grid: 161 × 161 height samples → indexed mesh with normals from neighbor heights, **trimesh collision** (`backface_collision = true`).
 - **Height** = dune noise (FastNoiseLite simplex smooth, freq 0.012, 2 octaves, remapped to 0..1 so it never goes below 0) × amplitude (1.2 m gentle → 5 m dunes in the west) + hills (NW 14 m σ28 at (−110, −110); SE 8 m σ22 at (130, 15)), × **flat mask** (0 within 4 m of roads, dirt, skidpad and start pad, blending to 1 at 22 m; also flat within 4–20 m of the walls).
@@ -324,8 +380,31 @@ Also: dust colour (road light grey, dirt brown, sand tan) and skid colour index 
 
 26. **Feedback #8:** "feels okay now". **Phase 2 step 2 accepted** (rocket launcher, Q/E swap, damage × armor types with colored numbers, reload ring, overheat with penalty). Committed and pushed as commit 3.
 
+27. **User chose enemies (Phase 3) next.** Enemy look decided: **half-humanoid robot vehicles**, kept as a model plan only; boxes for now (GAME_DESIGN.md updated). The user asked for research first.
+28. **Research: enemy spawning, respawn, aggro and chase** (4 searches) → `docs/research/ENEMY_SPAWNING_AI.md`. Key points: camps/packs in spawn zones; **per-mob respawn timers with a random window** + mild dynamic scaling (crowds, nearly-cleared packs); never spawn near or in view of players; RO behavior flags (passive / aggressive / assist / looter / coward / leader); aggro sight radius + LoS + an "!" alert telegraph; **hybrid leash** (distance from home OR an aggro timeout without damage, refreshed by damage) → return home invulnerable + regen; **mobs slower than the player** (driving is defense); FSM idle → alert → chase → attack → return → dead → respawn; MVP long timers + gravestone. Proposed order: player HP → Scrap Drone (box) with FSM → spawner camp → assist + Raider Gunner → loot → field boss.
+
+29. **User request:** "do all 6, but add an instant spawn for testers too." → **Implemented all of Phase 3** (player HP, Scrap Drone FSM, spawn camps, assist + Raider Gunner + Iron Hauler, loot, field boss with gravestone) **+ tester tools** (keys 1–4 / 5 / K / G / H). New folders: `scripts/enemies/`, `scripts/loot/`, `scripts/player/`; new files `layers.gd`, `world_health_bar.gd`, `player_hud.gd`, `test_spawner.gd`; the "Status" node in `sedan.tscn`. **Physics layers reworked** (player 4, enemy 8). Not tested yet.
+
+30. **Feedback #9 (first Phase 3 play):** (1) "add B for looking back"; (2) "monsters just drive to hit; at least elites should have moves, like charge then dash very fast; research AI enemy behavior and enemy design"; (3) "Boss fight: drive to dodge and fire back, like Space Invaders, where the boss throws attacks at you and you dodge while attacking."
+    - Research (3 searches) → `docs/research/ENEMY_BOSS_DESIGN.md`: attack anatomy telegraph → windup → strike → **recovery = punish window**; charger pattern (freeze, lock direction, inert recovery, cooldown); "every attack must telegraph"; **attack tokens** (Doom 2016, the pool on the target); clear enemy roles; bullet-hell readability (bright, low density, small player hitbox, 2D-readable patterns); **phases must change the fight**.
+    - Implemented:
+      - **B = look back** (hold; instant 180° camera flip and back; mouse aim still works). Gamepad Y.
+      - **Attack tokens** on the car (`request_attack_token` / `release_attack_token`, max 2 rammers). Rammers without a token **circle the player** at `orbit_radius` (14 m, Hauler 16 m) and wait their turn; after a ram they back off 0.8 s and release the token.
+      - **Elite Charge Dash** (Iron Hauler; the boss in P2+): windup 1 s with a **red ground lane** + "!!" + shaking (direction locks at 60%), dash 2.6× speed for ≤1.1 s, hit = 2× damage + knockback 30 + launch; **crash into a wall/obstacle = STUNNED 1.6 s, +50% damage taken (gold numbers)**; else recovery 0.8 s; cooldown 6 s.
+      - **Raider Gunner aim laser:** a red laser for 0.45 s before each shot; the aim locks at the start (+0.25 s velocity lead), so moving dodges it.
+      - **Boss rework** (`boss_brain.gd`): keeps 24–36 m, strafes, stays within 40 m of the arena center; patterns fan / ring-with-gap / mortar / spiral (P2+) / charge (P2+) / shock (if you hug it); never the same twice; gap 1.6 / 1.2 / 0.8 s by phase; phase changes are announced (toast) + a 24-orb ring.
+      - New reusable **`OrbProjectiles`** (big slow glowing orbs, MultiMesh, player-only hitbox 1.3 m + orb 0.55 m, wall/ground checks 10×/s, 18 dmg each (explosive)) and **`GroundStrike`** (red rim + filling disc telegraph, optional falling shell, then a blast: damage + knockback + launch).
+      - **Flat boss arena** (radius 55 m at (−110, −115), ring of 32 glowing orange pylons); the NW hill moved to (−160, 30) (12 m). Boss leash 90 → 60.
+    - Not tested yet.
+
+31. **Feedback #10 (2026-11-09):** "the direction is starting to be okay now; tidy the docs and put the code on git before the next step." **Phase 3 direction accepted** (no detailed tuning report yet).
+    - Docs tidied: Current Status rows brought up to date (Phase/Next/After that/Research were stale from Phase 2), research list completed.
+    - **Commit 4 "Phase 3: enemies, loot, field boss, tester tools + feedback #9"** pushed to `main`.
+    - Next: wait for the user's go-ahead; planned Phase 4 (RPG core).
+
 **Not done / known unknowns**
-- Next step not chosen yet. Options: the next attack type (Shotgun → Flamethrower → Railgun…), or Phase 3 (enemies that move and fight back, which needs player HP). Watch: rocket explosion visuals (transparent sphere + light in Compatibility), rocket self-hits near the car (the shooter is excluded, but rockets exploding on close ground still look fine?), swap feel, number colors.
+- Phase 3 + feedback #9 changes: the user played and says the direction is OK, but no detailed tuning feedback yet. Likely tuning: enemy speeds and damage, leash ranges, the boss's difficulty, loot amounts, enemies getting stuck on dunes or walls (straight-line chasing, no pathfinding).
+- Not in scope yet: threat tables for parties, looter behavior, enemy pathfinding, "not in view" spawn check (only distance), enemy sounds. Watch: rocket explosion visuals (transparent sphere + light in Compatibility), rocket self-hits near the car (the shooter is excluded, but rockets exploding on close ground still look fine?), swap feel, number colors.
 - Camera terrain collision isn't done (it may clip into dunes).
 
 **Open questions**

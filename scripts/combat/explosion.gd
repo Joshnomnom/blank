@@ -12,15 +12,18 @@ var damage: float = 90.0
 var damage_type: int = DamageTypes.Type.EXPLOSIVE
 var splash_min: float = 0.4
 var exclude: Array[RID] = []
+## Physics layers damaged (default: solid + enemies = player rockets). damage 0 = visual only.
+var mask: int = Layers.SOLID | Layers.ENEMY
 
 
-static func spawn(parent: Node, pos: Vector3, p_radius: float, p_damage: float, p_type: int, p_splash_min: float, p_exclude: Array[RID]) -> Explosion:
+static func spawn(parent: Node, pos: Vector3, p_radius: float, p_damage: float, p_type: int, p_splash_min: float, p_exclude: Array[RID], p_mask: int = Layers.SOLID | Layers.ENEMY) -> Explosion:
 	var e := Explosion.new()
 	e.radius = p_radius
 	e.damage = p_damage
 	e.damage_type = p_type
 	e.splash_min = p_splash_min
 	e.exclude = p_exclude
+	e.mask = p_mask
 	e.top_level = true
 	# Set BEFORE add_child: _ready() (damage query) runs inside add_child.
 	# top_level, so this local position is the world position.
@@ -38,12 +41,14 @@ func _ready() -> void:
 
 
 func _apply_damage() -> void:
+	if damage <= 0.0:
+		return
 	var sphere := SphereShape3D.new()
 	sphere.radius = radius
 	var params := PhysicsShapeQueryParameters3D.new()
 	params.shape = sphere
 	params.transform = Transform3D(Basis(), global_position)
-	params.collision_mask = 1
+	params.collision_mask = mask
 	params.exclude = exclude
 	var results := get_world_3d().direct_space_state.intersect_shape(params, 32)
 

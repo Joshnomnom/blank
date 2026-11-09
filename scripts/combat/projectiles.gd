@@ -11,6 +11,8 @@ extends Node3D
 @export var tracer_width: float = 0.07
 
 var shooter_rid: RID
+## Layers bullets hit. Player guns: solid + ground + enemies. Enemy guns: Layers.ENEMY_SHOTS.
+var hit_mask: int = Layers.PLAYER_SHOTS
 
 var _pos := PackedVector3Array()
 var _vel := PackedVector3Array()
@@ -73,7 +75,7 @@ func _physics_process(delta: float) -> void:
 	while i < _pos.size():
 		var from := _pos[i]
 		var to := from + _vel[i] * delta
-		var query := PhysicsRayQueryParameters3D.create(from, to, 3, exclude)
+		var query := PhysicsRayQueryParameters3D.create(from, to, hit_mask, exclude)
 		var hit := space.intersect_ray(query)
 		if not hit.is_empty():
 			_on_hit(hit, _damage[i], _dtype[i])
@@ -104,7 +106,7 @@ func _on_hit(hit: Dictionary, damage: float, damage_type: int) -> void:
 
 	var is_ground := false
 	if collider is CollisionObject3D:
-		is_ground = ((collider as CollisionObject3D).collision_layer & 2) != 0
+		is_ground = ((collider as CollisionObject3D).collision_layer & Layers.GROUND) != 0
 	if is_ground:
 		_play(_dust, _next_dust, hit_pos, normal)
 		_next_dust = (_next_dust + 1) % _dust.size()

@@ -11,6 +11,28 @@ const COLOR_NORMAL := Color(1.0, 1.0, 1.0)
 const COLOR_RESISTED := Color(0.78, 0.78, 0.78)
 
 
+## Floating text (e.g. "EVADE" when hitting a resetting enemy).
+static func spawn_text(parent: Node, pos: Vector3, text: String, color: Color = Color(0.8, 0.8, 0.8)) -> void:
+	var label := Label3D.new()
+	label.text = text
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.pixel_size = 0.012
+	label.font_size = 48
+	label.outline_size = 12
+	label.outline_modulate = Color(0.0, 0.0, 0.0, 1.0)
+	label.modulate = color
+	label.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	parent.add_child(label)
+	label.global_position = pos
+	var tween := label.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "global_position", pos + Vector3.UP * 1.2, 0.7)
+	tween.tween_property(label, "modulate:a", 0.0, 0.4).set_delay(0.3)
+	tween.tween_property(label, "outline_modulate:a", 0.0, 0.4).set_delay(0.3)
+	tween.chain().tween_callback(label.queue_free)
+
+
 static func spawn(parent: Node, pos: Vector3, amount: float, effectiveness: float = 1.0) -> void:
 	var effective := DamageTypes.is_effective(effectiveness)
 	var resisted := DamageTypes.is_resisted(effectiveness)

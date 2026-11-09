@@ -35,7 +35,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var from := global_position
 	var to := from + velocity * delta
-	var query := PhysicsRayQueryParameters3D.create(from, to, 3, [shooter_rid])
+	var query := PhysicsRayQueryParameters3D.create(from, to, Layers.PLAYER_SHOTS, [shooter_rid])
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		var hit_pos: Vector3 = hit["position"]

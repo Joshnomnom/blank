@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/vehicles/car_effects.gd" id="3_effects"]
 [ext_resource type="Script" path="res://scripts/vehicles/car_audio.gd" id="4_audio"]
 [ext_resource type="Script" path="res://scripts/combat/weapon_controller.gd" id="5_weapons"]
+[ext_resource type="Script" path="res://scripts/player/player_status.gd" id="6_status"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_body"]
 size = Vector3(1.8, 0.8, 4.4)
@@ -27,3 +28,6 @@ script = ExtResource("4_audio")
 
 [node name="Weapons" type="Node3D" parent="."]
 script = ExtResource("5_weapons")
+
+[node name="Status" type="Node" parent="."]
+script = ExtResource("6_status")

@@ -60,6 +60,9 @@ var _roads: Array[Rect2] = [
 var _skidpad_center := Vector2(80.0, 90.0)
 var _skidpad_radius := 32.0
 var _dirt_rect := Rect2(40.0, -170.0, 140.0, 105.0)  # x 40..180, z -170..-65
+## Flat round BOSS ARENA (bullet patterns read as 2D on flat ground).
+var _arena_center := Vector2(-110.0, -115.0)
+var _arena_radius := 55.0
 
 var _noise := FastNoiseLite.new()
 
@@ -80,6 +83,7 @@ func _ready() -> void:
 	_build_overlays()
 	_build_ramps()
 	_spawn_targets()
+	_spawn_camps()
 	WorldBuilder.add_outer_ground(self)
 	WorldBuilder.add_walls(self, half_size * 2.0, wall_height, wall_thickness)
 	WorldBuilder.add_wall_poles(self, half_size * 2.0, wall_height, wall_thickness, 10.0)
@@ -111,8 +115,8 @@ func _height(x: float, z: float) -> float:
 	var amp := lerpf(gentle_amplitude, dune_amplitude, smoothstep(10.0, 40.0, -x))
 	# Noise remapped to 0..1 so dunes only rise above 0 (never dip below the outer ground plane).
 	var h := clampf(_noise.get_noise_2d(x, z) * 0.5 + 0.5, 0.0, 1.0) * amp
-	# Big hill in the north-west, gentle hill in the south-east.
-	h += 14.0 * exp(-p.distance_squared_to(Vector2(-110.0, -110.0)) / (2.0 * 28.0 * 28.0))
+	# Big hill in the west (moved out of the boss arena), gentle hill in the south-east.
+	h += 12.0 * exp(-p.distance_squared_to(Vector2(-160.0, 30.0)) / (2.0 * 20.0 * 20.0))
 	h += 8.0 * exp(-p.distance_squared_to(Vector2(130.0, 15.0)) / (2.0 * 22.0 * 22.0))
 	return h * _flat_mask(p)
 
@@ -124,6 +128,7 @@ func _flat_mask(p: Vector2) -> float:
 		d = minf(d, _rect_distance(r, p))
 	d = minf(d, maxf(p.distance_to(_skidpad_center) - _skidpad_radius, 0.0))
 	d = minf(d, _rect_distance(_dirt_rect, p))
+	d = minf(d, maxf(p.distance_to(_arena_center) - _arena_radius, 0.0))
 	var mask := smoothstep(4.0, 22.0, d)
 	var to_wall := half_size - maxf(absf(p.x), absf(p.y))
 	mask *= smoothstep(4.0, 20.0, to_wall)
@@ -280,6 +285,74 @@ func _spawn_targets() -> void:
 		dummy.armor_type = t[3]
 		add_child(dummy)
 		dummy.position = Vector3(t[0], _height(t[0], t[1]), t[1])
+
+
+# --------------------------------------------------------------------------
+# Enemy camps (Phase 3) + tester spawner
+# --------------------------------------------------------------------------
+
+func _spawn_camps() -> void:
+	var drone := &"scrap_drone"
+	var gunner := &"raider_gunner"
+	var hauler := &"iron_hauler"
+	# Drone pack in the south-west dunes.
+	_add_camp(Vector3(-90.0, 0.0, 60.0), [drone, drone, drone, drone], 15.0, 20.0, 40.0, false)
+	# Drone pack south of the east-west road.
+	_add_camp(Vector3(60.0, 0.0, -18.0), [drone, drone, drone], 12.0, 20.0, 40.0, false)
+	# Raider gunners (+1 drone) in the west dunes.
+	_add_camp(Vector3(-125.0, 0.0, 5.0), [gunner, gunner, gunner, drone], 16.0, 25.0, 45.0, false)
+	# Iron Hauler leader with assisting drones, by the south-east hill.
+	_add_camp(Vector3(125.0, 0.0, 45.0), [hauler, drone, drone, drone], 14.0, 30.0, 50.0, false)
+	# FIELD BOSS in the flat north-west arena. Test timer 3–5 min (real game: 60–120 min).
+	_add_camp(Vector3(_arena_center.x, 0.0, _arena_center.y), [&"dune_tyrant"], 4.0, 180.0, 300.0, true)
+	_build_arena_pylons()
+
+	var tester := TestSpawner.new()
+	tester.name = "TestSpawner"
+	add_child(tester)
+
+
+func _build_arena_pylons() -> void:
+	# Ring of orange/black pylons marking the boss arena edge (visual only, no collision).
+	var count := 32
+	var pylon := CylinderMesh.new()
+	pylon.top_radius = 0.25
+	pylon.bottom_radius = 0.45
+	pylon.height = 2.5
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.95, 0.45, 0.1)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.4, 0.1)
+	mat.emission_energy_multiplier = 0.4
+	pylon.material = mat
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = pylon
+	mm.instance_count = count
+	for i in count:
+		var a := TAU * float(i) / float(count)
+		var x := _arena_center.x + cos(a) * _arena_radius
+		var z := _arena_center.y + sin(a) * _arena_radius
+		mm.set_instance_transform(i, Transform3D(Basis(), Vector3(x, _height(x, z) + 1.25, z)))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	add_child(mmi)
+
+
+func _add_camp(pos: Vector3, members: Array, radius: float, respawn_min: float, respawn_max: float, boss: bool) -> void:
+	var camp := SpawnCamp.new()
+	var typed: Array[StringName] = []
+	for m in members:
+		typed.append(m)
+	camp.members = typed
+	camp.radius = radius
+	camp.respawn_min = respawn_min
+	camp.respawn_max = respawn_max
+	camp.show_gravestone = boss
+	if boss:
+		camp.min_player_distance = 40.0
+	add_child(camp)
+	camp.position = Vector3(pos.x, _height(pos.x, pos.z), pos.z)
 
 
 # --------------------------------------------------------------------------

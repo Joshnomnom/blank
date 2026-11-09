@@ -164,6 +164,8 @@ var on_ground: bool = false
 var air_time: float = 0.0
 var vertical_speed: float = 0.0              ## m/s, in the air
 var current_surface: StringName = &"road"
+## False while destroyed (Phase 3): all driving input reads as zero.
+var controls_enabled: bool = true
 
 var _spawn_transform: Transform3D
 var _surface_map: Node
@@ -193,13 +195,17 @@ var _s_drift_angle: float = 0.0
 var _s_drift_loss: float = 1.0
 
 @onready var model: SedanModel = $Model
+## HP, death/respawn, inventory, HUD (Phase 3). Optional (null in scenes without it).
+@onready var status: PlayerStatus = get_node_or_null("Status")
 
 
 func _ready() -> void:
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
-	# Body collides with solid objects (layer 1: walls, ramps) but NOT the ground (layer 2).
-	# Only the wheel rays touch the ground. (Fix for the chassis-blocks-landing bug.)
-	collision_mask = 1
+	add_to_group("player")
+	# Body is on the PLAYER layer and collides with solid objects (walls, ramps, dummies) and
+	# enemies - but NOT the ground (layer 2): only the wheel rays touch the ground.
+	collision_layer = Layers.PLAYER
+	collision_mask = Layers.SOLID | Layers.ENEMY
 	_spawn_transform = global_transform
 	travel_dir = _flat_forward()
 	_surface_map = get_tree().get_first_node_in_group("surface_map")
@@ -211,6 +217,60 @@ func _ready() -> void:
 
 func get_speed_kmh() -> float:
 	return absf(speed) * 3.6
+
+
+# --- Combat interface (Phase 3) -------------------------------------------
+
+func is_alive() -> bool:
+	return status == null or status.is_alive()
+
+
+func get_aim_point() -> Vector3:
+	return global_position + Vector3.UP * 0.8
+
+
+## Called by enemy attacks, enemy bullets and explosions.
+func take_damage(amount: float, at: Vector3, damage_type: int = DamageTypes.Type.KINETIC) -> void:
+	if status:
+		status.take_damage(amount, at, damage_type)
+
+
+## Shove the car (rams, shockwaves). Horizontal only; mixes into the travel velocity.
+func apply_knockback(impulse: Vector3) -> void:
+	var v := travel_dir * speed + Vector3(impulse.x, 0.0, impulse.z)
+	var length := v.length()
+	if length > 0.1:
+		travel_dir = v / length
+		speed = length
+	if impulse.y > 0.0 and on_ground:
+		on_ground = false
+		vertical_speed = impulse.y
+
+
+## Loot pickup -> inventory.
+func collect(item: Dictionary) -> void:
+	if status:
+		status.collect(item)
+
+
+# --- Attack tokens (research: ENEMY_BOSS_DESIGN.md §2) ---------------------
+## Max enemies allowed to ram this car at the same time; others circle and wait.
+var max_melee_attackers: int = 2
+var _melee_tokens: Array = []
+
+
+func request_attack_token(enemy: Node) -> bool:
+	_melee_tokens = _melee_tokens.filter(func(e): return is_instance_valid(e) and e.call("is_alive"))
+	if enemy in _melee_tokens:
+		return true
+	if _melee_tokens.size() < max_melee_attackers:
+		_melee_tokens.append(enemy)
+		return true
+	return false
+
+
+func release_attack_token(enemy: Node) -> void:
+	_melee_tokens.erase(enemy)
 
 
 func reset_to_spawn() -> void:
@@ -234,7 +294,7 @@ func reset_to_spawn() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if Input.is_action_just_pressed("reset_car"):
+	if Input.is_action_just_pressed("reset_car") and controls_enabled:
 		reset_to_spawn()
 		return
 
@@ -286,6 +346,12 @@ func _physics_process(delta: float) -> void:
 # --------------------------------------------------------------------------
 
 func _read_input(delta: float) -> void:
+	if not controls_enabled:
+		throttle_input = 0.0
+		brake_input = 0.0
+		handbrake_input = false
+		steer_input = move_toward(steer_input, 0.0, steer_out_speed * delta)
+		return
 	throttle_input = Input.get_action_strength("accelerate")
 	brake_input = Input.get_action_strength("brake")
 	handbrake_input = Input.is_action_pressed("handbrake")
