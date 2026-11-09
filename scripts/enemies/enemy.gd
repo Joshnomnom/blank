@@ -73,6 +73,14 @@ var _status_label: Label3D
 var _lane: MeshInstance3D
 var _laser: MeshInstance3D
 var _collision: CollisionShape3D
+var _name_label: Label3D
+
+## Damage the player dealt (boss reward share). Reset when the enemy leashes home.
+var player_damage: float = 0.0
+## Level actually used (data.level + tester offset). Set before add_child.
+var level: int = 1
+
+const Econ := preload("res://scripts/loot/economy.gd")
 
 
 static func create(p_data: EnemyData, pos: Vector3, p_camp: Node = null, p_wander_radius: float = 12.0) -> Enemy:
@@ -82,6 +90,7 @@ static func create(p_data: EnemyData, pos: Vector3, p_camp: Node = null, p_wande
 	e.camp = p_camp
 	e.wander_radius = p_wander_radius
 	e.position = pos  # parent must be a world-aligned node
+	e.level = p_data.level
 	return e
 
 
@@ -163,6 +172,7 @@ func take_damage(amount: float, at: Vector3, damage_type: int = DamageTypes.Type
 	if action == Action.STUNNED:
 		mult *= data.stun_damage_mult  # punish window
 	_since_damaged = 0.0
+	player_damage += minf(amount * mult, health.hp)  # only the player deals damage for now
 	var first_hit := state == State.IDLE or state == State.ALERT
 	if first_hit:
 		_engage(_find_player())
@@ -180,6 +190,7 @@ func assist_join(p: CarController) -> void:
 ## Tester helper: kill instantly (drops loot).
 func debug_kill() -> void:
 	if state != State.DEAD:
+		player_damage += health.hp
 		health.take_damage(health.hp, get_aim_point(), 1.0)
 
 
@@ -493,6 +504,7 @@ func _return_tick(delta: float) -> void:
 	if to.length() < 3.0:
 		state = State.IDLE
 		health.reset()
+		player_damage = 0.0
 		_bar.visible = false
 		_wander_target = home
 		return
@@ -637,7 +649,7 @@ func _die() -> void:
 	_alert_label.visible = false
 	var world := get_parent()
 	Explosion.spawn(world, get_aim_point(), 2.5 * data.scale, 0.0, DamageTypes.Type.EXPLOSIVE, 0.4, [])
-	Loot.drop(world, global_position, data)
+	_grant_rewards(world)
 	if data.is_boss:
 		OrbProjectiles.get_shared(get_tree()).clear()
 	died.emit(self)
@@ -646,6 +658,43 @@ func _die() -> void:
 	_lane.queue_free()
 	_laser.queue_free()
 	queue_free()
+
+
+## EXP to the player + scrap/loot drop. Level gap and (bosses) damage share scale both;
+## chips ignore the gap (decided log #33). Research: LEVELS_EXP_FEEL.md §3.
+func _grant_rewards(world: Node) -> void:
+	var p := get_tree().get_first_node_in_group("player") as CarController
+	var status: PlayerStatus = p.status if p else null
+	var player_level := status.level if status else 1
+	var share := 1.0
+	if data.rank == Econ.Rank.BOSS:
+		share = clampf(player_damage / data.max_hp, 0.0, 1.0)
+		if share < Econ.BOSS_MIN_SHARE:
+			share = 0.0
+	var scrap: int = Econ.kill_scrap(level, data.rank, player_level, share)
+	Loot.drop(world, global_position, data, scrap)
+	var exp_gain: int = Econ.kill_exp(level, data.rank, player_level, share)
+	if status and exp_gain > 0:
+		status.add_exp(exp_gain)
+		DamageNumber.spawn_text(world, get_aim_point() + Vector3.UP * (1.6 * data.scale + 0.8),
+			"+%d EXP" % exp_gain, Color(0.45, 0.8, 1.0))
+
+
+## Name plate "Lv 4  Raider Gunner" in the con color vs the player's level (WoW-style).
+## Called on spawn and by PlayerStatus on level-up (group "enemies").
+func refresh_con() -> void:
+	if _name_label == null:
+		return
+	var p := get_tree().get_first_node_in_group("player") as CarController
+	var player_level: int = p.status.level if p and p.status else 1
+	var gap := level - player_level
+	var tag := ""
+	if data.rank == Econ.Rank.ELITE:
+		tag = "  [ELITE]"
+	elif data.rank == Econ.Rank.BOSS:
+		tag = "  [BOSS]"
+	_name_label.text = "%s  %s%s" % [Econ.level_text(level, player_level), data.display_name, tag]
+	_name_label.modulate = Econ.con_color(gap)
 
 
 # --------------------------------------------------------------------------
@@ -696,9 +745,9 @@ func _build() -> void:
 	_collision.position = Vector3(0.0, 1.15, 0.0) * s
 	add_child(_collision)
 
-	var name_label := _label(data.display_name, 40 if not data.is_boss else 56, 0.008,
-		Color(1.0, 0.85, 0.4) if data.is_boss else Color.WHITE, 2.75 * s + 0.6)
-	name_label.outline_size = 10
+	_name_label = _label(data.display_name, 40 if not data.is_boss else 56, 0.008, Color.WHITE, 2.75 * s + 0.6)
+	_name_label.outline_size = 10
+	refresh_con()
 	var armor_label := _label(DamageTypes.ARMOR_NAMES[data.armor], 32, 0.007, DamageTypes.ARMOR_COLORS[data.armor], 2.75 * s + 0.3)
 	armor_label.outline_size = 8
 

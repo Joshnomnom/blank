@@ -11,15 +11,15 @@ Related docs: [GAME_DESIGN.md](GAME_DESIGN.md) (overall plan) · [research/](res
 
 | | |
 |---|---|
-| **Phase** | **4: RPG core**. Steps 1–3 (bag + part stats + chips, temporary garage, nitro dash) **accepted by the user** ("happy now", log #39) and committed (commit 5). Phases 0–3 done. |
-| **Latest** | **Commit 5: Phase 4 steps 1–3** (bag I, garage F, nitro dash Shift, slerp fix, NitroDash preload fix). Details: How Systems Work → Phase 4 steps 1–3. |
+| **Phase** | **4: RPG core**. Steps 1–4 (bag, garage, nitro dash, levels/EXP/scrap) **accepted** and committed (commit 6). Now: **visual clarity pass** (user request, log #41), scope being decided. |
+| **Latest** | **Phase 4 step 4 (log #40):** monsters have **level + rank** (Drone L2, Gunner L4, Hauler L6 Elite, Tyrant L12 Boss); kills give **EXP + scrap from formulas** (Economy) × **level-gap modifier** (× boss damage share); **con-colored name plates** "Lv 4 Raider Gunner"; player **level + EXP bar** (animated, bottom of screen), **LEVEL UP** banner + gold ring + full repair, "+N EXP" floating text. Tester keys **L** (+1 level), **9** (spawn level offset). Research: [research/LEVELS_EXP_FEEL.md](research/LEVELS_EXP_FEEL.md). |
 | **Phase 3 state** | **Phase 3 (all 6 steps) implemented, first play-test done (feedback #9):** player HP/death/respawn + HUD, enemies (Scrap Drone, Raider Gunner, Iron Hauler, boss Dune Tyrant) with an FSM, spawn camps with respawn timers + assist, loot drops (scrap / parts with rarity / chips) + inventory, field boss with a gravestone + boss bar, and **tester instant-spawn keys** (1–4 spawn, 5 respawn camps, K kill all, G god, H heal). See How Systems Work → Phase 3. |
 | **Previous** | **Phase 2 step 2 accepted and committed (commit 3):** Rocket Launcher + Q/E swap + damage × armor types (colored numbers, EFFECTIVE/RESISTED) + crosshair reload ring + machine gun overheat with penalty lockout. Sound is deferred. |
-| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 `7e671e9` = Phase 2 step 1. Commit 3 `c813f9e` = Phase 2 step 2. **Commit 4 `313ad1c` = Phase 3 (enemies, loot, boss, tester tools) + feedback #9.** Commit 5 `1fc1f95` = Phase 4 steps 1–3 (bag, garage, nitro). **Rule: commit + push after the user accepts a step.** |
-| **Next** | **Waiting on the user's go-ahead.** Proposed next Phase 4 step: **levels, EXP and scrap from monster level** (monster level + rank, player level + EXP bar, level-gap modifier, level-up feedback). Then: real chip rates + soft pity + presentation, repair cost, save/load. Open: dash i-frames? Research: [research/LOOT_ECONOMY_CHIPS.md](research/LOOT_ECONOMY_CHIPS.md). |
+| **Git** | Repo: https://github.com/Joshnomnom/blank (branch `main`). Commit 1 `e1b2348` = Phase 0 + Phase 1. Commit 2 `7e671e9` = Phase 2 step 1. Commit 3 `c813f9e` = Phase 2 step 2. **Commit 4 `313ad1c` = Phase 3 (enemies, loot, boss, tester tools) + feedback #9.** Commit 5 `1fc1f95` = Phase 4 steps 1–3 (bag, garage, nitro). Commit 6 = Phase 4 step 4 (levels/EXP/scrap). **Rule: commit + push after the user accepts a step.** |
+| **Next** | **Visual clarity pass** (log #41): make what's on screen easier to read. Waiting on the user's scope choice. **Kept for later (Phase 4 backlog, in suggested order):** chips for real (rates 0.05/0.1/3%, soft pity, card-flip reveal, beams only Epic+ and chips, longer rare despawn) → repair cost on death → save/load → stats from levels (design talk). Open: dash i-frames? |
 | **Main scene** | `scenes/terrain_test.tscn`. The old flat arena `scenes/test_drive.tscn` still works (car uses "road" grip there). |
 | **After that** | Phase 5 (first content slice: one town, two farming zones, one boss, three chassis, one job tree, NPC shop). The real car model and half-humanoid robot enemy models come when the art pass starts; everything is still placeholder boxes. |
-| **Research** | [research/CAR_PHYSICS_RESEARCH.md](research/CAR_PHYSICS_RESEARCH.md) · [research/DRIVING_GAME_FEEL.md](research/DRIVING_GAME_FEEL.md) · [research/VEHICLE_GROUND_PHYSICS.md](research/VEHICLE_GROUND_PHYSICS.md) · [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md) · [research/ENEMY_SPAWNING_AI.md](research/ENEMY_SPAWNING_AI.md) · [research/ENEMY_BOSS_DESIGN.md](research/ENEMY_BOSS_DESIGN.md) · [research/LOOT_ECONOMY_CHIPS.md](research/LOOT_ECONOMY_CHIPS.md) |
+| **Research** | [research/CAR_PHYSICS_RESEARCH.md](research/CAR_PHYSICS_RESEARCH.md) · [research/DRIVING_GAME_FEEL.md](research/DRIVING_GAME_FEEL.md) · [research/VEHICLE_GROUND_PHYSICS.md](research/VEHICLE_GROUND_PHYSICS.md) · [research/WEAPONS_BALANCE_EQUIPMENT.md](research/WEAPONS_BALANCE_EQUIPMENT.md) · [research/ENEMY_SPAWNING_AI.md](research/ENEMY_SPAWNING_AI.md) · [research/ENEMY_BOSS_DESIGN.md](research/ENEMY_BOSS_DESIGN.md) · [research/LOOT_ECONOMY_CHIPS.md](research/LOOT_ECONOMY_CHIPS.md) · [research/LEVELS_EXP_FEEL.md](research/LEVELS_EXP_FEEL.md) |
 | **Physics layers** | `scripts/combat/layers.gd`: **1 SOLID** (walls, ramps, dummies), **2 GROUND** (terrain; rays only), **4 PLAYER**, **8 ENEMY**. Ramps = 1+2. Car: layer 4, mask 1+8. Enemies: layer 8, mask 1+4. Player shots/aim: 1+2+8; enemy shots: 1+2+4; player rocket explosions damage 1+8; sight blockers 1+2. Car wheel rays 1+2, enemy/pickup ground rays 2. **New objects must follow this.** |
 
 ### Things most likely to need fixing or tuning in Phase 1 (check first)
@@ -86,6 +86,7 @@ docs/
     CAR_PHYSICS_RESEARCH.md  car physics math, models, tuning values, upgrade plan
     DRIVING_GAME_FEEL.md     game feel: diagnosis of v1, drift controller, juice, Driving v2 plan
     LOOT_ECONOMY_CHIPS.md    EXP/scrap curves, economy faucets/sinks, chip rates + power budget, rare-drop feel
+    LEVELS_EXP_FEEL.md       level-up/EXP feedback, con colors (WoW), boss reward share by damage (RO MVP)
 scenes/
   terrain_test.tscn        MAIN scene (Phase 1): Terrain + Sedan (spawn 0,0.3,150) + ChaseCamera + DebugOverlay
   test_drive.tscn          Phase 0 flat arena: Arena + Sedan + ChaseCamera + DebugOverlay
@@ -117,6 +118,7 @@ scripts/
   combat/orb_projectiles.gd    class OrbProjectiles: shared slow glowing boss orbs (player-only hitbox)
   combat/ground_strike.gd      class GroundStrike: telegraphed ground blast (red disc → explosion, knockback)
   enemies/spawn_camp.gd        class SpawnCamp: pack slots, per-slot random + dynamic respawn, assist calls, boss gravestone
+  loot/economy.gd              Economy formulas (NO class_name; preload as Econ): EXP/scrap curves, ranks, level-gap modifier, con colors
   loot/loot.gd                 class Loot: rarity table, part/chip/scrap rolls (parts/chips built by ItemDB), drop()
   items/item_db.gd             class ItemDB: slots, stat table + caps, main stats by rarity, affixes, chip defs, make_part/make_chip
   player/equipment.gd          class Equipment ("Equipment" under Status): equipped parts + chips -> car/HP/gun stats
@@ -324,6 +326,26 @@ Camps in terrain_test: 4 drones SW (−90,60); 3 drones (60,−18); 3 gunners + 
 - **Items**: Nitro slot main stat changed from Acceleration to **Nitro Recharge** 10/15/20/25/30% (cap 100%); new affixes nitro_regen 3–6 and nitro_power ("Dash Power", cap 40%) 3–6. Acceleration is still an affix.
 - No sound yet (sound is deferred). No invulnerability during the dash (open question).
 
+### Phase 4 step 4: levels, EXP, scrap from monster level (log #40)
+Research: `LOOT_ECONOMY_CHIPS.md` §1–2 (numbers), `LEVELS_EXP_FEEL.md` (feel, con colors, boss share).
+
+**Formulas** (`scripts/loot/economy.gd`, loaded with `const Econ := preload(...)`, no class_name):
+- `mob_exp(L) = round(12·L^1.5 + 8)` · `exp_to_next(L) = mob_exp(L) × round(8 + 3L + 0.1L²)` (L1→2: 220 EXP, L5: 3,692, L10: 18,576). No level cap.
+- Scrap per kill = `(4 + 2L) × rank × gap × share × random 0.7–1.3` (min 1).
+- Rank (`Econ.Rank`): NORMAL EXP ×1 scrap ×1 · ELITE ×4 ×4 · BOSS EXP ×60 scrap ×40.
+- Level-gap multiplier (gap = monster − player, EXP and scrap, NOT chips): +1..+4 → +5%/level, ≥ +5 → 120%, −5..0 → 100%, −6..−14 → 90%..10%, ≤ −15 → 10%.
+- Con colors: ≤ −15 gray · −14..−6 green · −5..+2 yellow · +3..+4 orange · ≥ +5 red · ≥ +10 shows "Lv ??".
+- Boss share: `player_damage / max_hp` (needs ≥ 5%, else no EXP/scrap). Normal/elite: full reward.
+
+**Enemies** (`EnemyData.level`, `.rank`; `Enemy.level` = data level, tester can offset it): Drone L2, Gunner L4, Hauler L6 ELITE, Tyrant L12 BOSS (old fixed scrap_min/max removed). `Enemy.player_damage` counts damage taken (capped by remaining HP; reset when it leashes home; the K tester kill counts). On death `_grant_rewards()`: scrap → `Loot.drop(world, pos, data, scrap)`, EXP → `PlayerStatus.add_exp()` + floating "+N EXP" (light blue). Name plate `refresh_con()`: "Lv 4  Raider Gunner  [ELITE]/[BOSS]" in the con color; refreshed on spawn and on every player level-up (`call_group("enemies", "refresh_con")`).
+Example rewards at player level 1: Drone (gap +1) 44 EXP / ~8 scrap; Gunner (+3) 120 EXP / ~14 scrap; Hauler (+5, Elite) 883 EXP / ~77 scrap; Tyrant (+11, Boss) ~36,500 EXP (≈ several levels at once) / ~1,340 scrap.
+
+**Player** (`PlayerStatus.level`, `exp_points`, `exp_to_next()`, `add_exp()`, `debug_level_up()`, signals `leveled_up`, `exp_gained`): multi-level gains loop; level-up = **full repair**, HUD banner, gold ring burst (torus 2 → 14 m over 0.9 s + light), enemies re-colored. Levels don't give stats yet.
+
+**HUD** (`player_hud.gd`): thin full-width EXP bar at the bottom (light blue, 10% ticks, fill animates; on level-up it fills to the end then wraps), centered text "Lv N  x / y EXP (z%)"; "LEVEL UP / Level N · car fully repaired" banner (2.6 s, pop-in, fade).
+
+**Tester**: **L** +1 level; **9** cycles the level offset of tester-spawned monsters (0, +3, +5, +10, −6, −15); the spawn toast shows the level. Monster stats don't scale with level (only rewards and colors).
+
 ### Terrain test area (`scripts/world/terrain_test.gd`)
 - 400 × 400 m, 2.5 m grid: 161 × 161 height samples → indexed mesh with normals from neighbor heights, **trimesh collision** (`backface_collision = true`).
 - **Height** = dune noise (FastNoiseLite simplex smooth, freq 0.012, 2 octaves, remapped to 0..1 so it never goes below 0) × amplitude (1.2 m gentle → 5 m dunes in the west) + hills (NW 14 m σ28 at (−110, −110); SE 8 m σ22 at (130, 15)), × **flat mask** (0 within 4 m of roads, dirt, skidpad and start pad, blending to 1 at 22 m; also flat within 4–20 m of the walls).
@@ -487,6 +509,15 @@ Camps in terrain_test: 4 drones SW (−90,60); 3 drones (60,−18); 3 gunners + 
     - Not re-tested.
 
 39. **Feedback #11:** after "what is the next step" (test bag/garage/nitro first), the user said: "happy now". **Phase 4 steps 1–3 accepted** (bag, garage, nitro dash, plus the slerp and NitroDash preload fixes). Committed and pushed as commit 5 (`1fc1f95`). No tuning changes requested. Next step waits on the user's go-ahead (proposed: levels/EXP/scrap).
+
+40. **User request:** "do a research on all that and start" (levels, EXP, scrap from monster level).
+    - The numbers were already researched (`LOOT_ECONOMY_CHIPS.md`), so new research (3 searches) covered the rest → `docs/research/LEVELS_EXP_FEEL.md`: level-up juice (bar fill animation, fanfare, radial burst, level-up-only sound, but don't overload), WoW con colors (gray/green/yellow/orange/red/skull), RO EXP by damage share + tap bonus +25% per extra attacker (for multiplayer later).
+    - Built step 4 (How Systems Work → Phase 4 step 4): new `loot/economy.gd`; `enemy_data.gd` (level, rank; scrap fields removed); `enemy.gd` (player_damage, `_grant_rewards`, `refresh_con`, level); `loot.gd` (scrap passed in); `player_status.gd` (level, EXP, level-up ring + full repair); `player_hud.gd` (EXP bar, banner); `test_spawner.gd` + `input_setup.gd` (L, 9); `debug_overlay.gd` (help).
+    - `economy.gd` has **no class_name** and is preloaded (lesson from log #38).
+    - Choices made by default: level-up fully repairs the car; normal/elite kills give full rewards (only bosses use the damage share).
+    - **Not tested.** Watch: script errors, EXP pace (is ~11 drone kills for level 2 right?), the boss giving several levels at once at level 1, name plate colors, EXP bar overlapping other HUD.
+
+41. **Feedback #12:** "it's all good now; let's keep the plan for the future. Right now let's make our visuals clearer." **Phase 4 step 4 accepted**, committed as commit 6. The remaining Phase 4 plan (chips for real, repair cost, save/load, stats from levels) is **parked in the backlog** (Current Status → Next). New focus: a **visual clarity pass**; scope asked from the user.
 
 **Not done / known unknowns**
 - Phase 3 + feedback #9 changes: the user played and says the direction is OK, but no detailed tuning feedback yet. Likely tuning: enemy speeds and damage, leash ranges, the boss's difficulty, loot amounts, enemies getting stuck on dunes or walls (straight-line chasing, no pathfinding).

@@ -37,6 +37,8 @@ func _ready() -> void:
 	_add_action("debug_give_part", [KEY_6], [], [])
 	_add_action("debug_give_chip", [KEY_7], [], [])
 	_add_action("debug_give_scrap", [KEY_8], [], [])
+	_add_action("debug_spawn_level", [KEY_9], [], [])
+	_add_action("debug_level_up", [KEY_L], [], [])
 
 
 func _add_action(action: StringName, keys: Array, buttons: Array, axes: Array, mouse_buttons: Array = []) -> void:

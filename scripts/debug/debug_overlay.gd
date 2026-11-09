@@ -51,6 +51,7 @@ func _process(_delta: float) -> void:
 		"TEST    - 1 drone  2 gunner  3 hauler  4 boss (at crosshair)",
 		"          5 respawn camps  K kill all  G god mode  H heal",
 		"          6 give part  7 give chip  8 +1000 scrap",
+		"          L +1 level  9 cycle spawn level offset",
 		"Shift   - NITRO DASH (drifting refills nitro faster)",
 		"I       - bag   F - garage (stop on the garage pad)",
 		"B       - look back (hold)",

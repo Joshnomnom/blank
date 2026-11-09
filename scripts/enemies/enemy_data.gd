@@ -66,9 +66,12 @@ var shock_radius: float = 12.0
 var shock_damage: float = 60.0
 var shock_interval: float = 9.0
 
-# Loot.
-var scrap_min: int = 3
-var scrap_max: int = 8
+# Level + rank (Phase 4 step 4): EXP and scrap come from Economy formulas of these
+# (docs/research/LOOT_ECONOMY_CHIPS.md §1). rank = Economy Rank: 0 NORMAL, 1 ELITE, 2 BOSS.
+var level: int = 1
+var rank: int = 0
+
+# Loot (scrap amount = Economy.kill_scrap).
 var item_chance: float = 0.2
 var item_rolls: int = 1
 var rarity_bonus: float = 0.0
@@ -97,8 +100,8 @@ static func make(type_id: StringName) -> EnemyData:
 			d.damage = 15.0
 			d.attack_cooldown = 1.2
 			d.knockback = 10.0
-			d.scrap_min = 3
-			d.scrap_max = 8
+			d.level = 2
+			d.rank = 0  # NORMAL
 			d.item_chance = 0.2
 			d.chip_chance = 0.01
 		&"raider_gunner":
@@ -123,8 +126,8 @@ static func make(type_id: StringName) -> EnemyData:
 			d.pref_max = 34.0
 			d.bullet_speed = 45.0
 			d.bullet_spread = 2.5
-			d.scrap_min = 5
-			d.scrap_max = 12
+			d.level = 4
+			d.rank = 0  # NORMAL
 			d.item_chance = 0.3
 			d.chip_chance = 0.01
 		&"iron_hauler":
@@ -150,8 +153,8 @@ static func make(type_id: StringName) -> EnemyData:
 			# ELITE move: charge dash.
 			d.can_charge = true
 			d.charge_cooldown = 6.0
-			d.scrap_min = 15
-			d.scrap_max = 30
+			d.level = 6
+			d.rank = 1  # ELITE
 			d.item_chance = 0.6
 			d.rarity_bonus = 0.5
 			d.chip_chance = 0.02
@@ -188,8 +191,8 @@ static func make(type_id: StringName) -> EnemyData:
 			d.shock_radius = 12.0
 			d.shock_damage = 60.0
 			d.shock_interval = 9.0
-			d.scrap_min = 150
-			d.scrap_max = 250
+			d.level = 12
+			d.rank = 2  # BOSS
 			d.item_chance = 1.0
 			d.item_rolls = 3
 			d.rarity_bonus = 3.0

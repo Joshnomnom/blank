@@ -9,6 +9,11 @@ extends Node
 ##   G god mode (no damage) · H heal to full
 ##   6 give a random part (random rarity, weighted toward good ones for testing)
 ##   7 give a random chip · 8 give 1000 scrap (Phase 4 bag testing)
+##   L +1 player level · 9 cycle the LEVEL OFFSET of spawned monsters (0, +3, +5, +10, −6, −15)
+##     to see every con color / reward multiplier (Phase 4 step 4). Stats don't change with level.
+
+const LEVEL_OFFSETS := [0, 3, 5, 10, -6, -15]
+var _offset_index: int = 0
 
 const SPAWN_KEYS := {
 	&"debug_spawn_1": &"scrap_drone",
@@ -44,6 +49,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		_give(ItemDB.make_chip(ids[randi() % ids.size()]))
 	elif event.is_action_pressed("debug_give_scrap"):
 		_give({"kind": "scrap", "amount": 1000})
+	elif event.is_action_pressed("debug_level_up"):
+		var status := _status()
+		if status:
+			status.debug_level_up()
+	elif event.is_action_pressed("debug_spawn_level"):
+		_offset_index = (_offset_index + 1) % LEVEL_OFFSETS.size()
+		_toast("Spawn level offset %+d (vs the monster's normal level)" % LEVEL_OFFSETS[_offset_index])
 	elif event.is_action_pressed("debug_heal"):
 		var status := _status()
 		if status:
@@ -69,8 +81,9 @@ func _spawn(id: StringName) -> void:
 		pos.y = (hit["position"] as Vector3).y
 	var data := EnemyData.make(id)
 	var enemy := Enemy.create(data, pos, null, 12.0)
+	enemy.level = maxi(data.level + LEVEL_OFFSETS[_offset_index], 1)
 	get_tree().current_scene.add_child(enemy)
-	_toast("Spawned %s" % data.display_name)
+	_toast("Spawned Lv %d %s" % [enemy.level, data.display_name])
 
 
 func _give(item: Dictionary) -> void:

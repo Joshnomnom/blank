@@ -77,6 +77,7 @@ It takes the structure of classic MMORPGs like Ragnarok Online (levels, stats, j
 
 **Loot, EXP and chips (decided 2026-11-09, research: [research/LOOT_ECONOMY_CHIPS.md](research/LOOT_ECONOMY_CHIPS.md)):**
 - Every monster has a **level** and a **rank** (Normal / Elite / Boss). EXP and scrap come from formulas of level × rank, so higher level = higher reward. Proposed: `mob_exp(L) = 12·L^1.5 + 8`, scrap `4 + 2L` (× 0.7–1.3), rank × 1 / 4 / boss EXP 60 & scrap 40 (shared by damage).
+- **Implemented 2026-11-09 (Phase 4 step 4):** monster level + rank, EXP/scrap formulas, level-gap modifier, WoW-style **con colors** on name plates (gray → red, "Lv ??" for 10+ above), boss rewards by damage share (≥ 5%), level-up = full repair + banner + gold ring. Research: [research/LEVELS_EXP_FEEL.md](research/LEVELS_EXP_FEEL.md).
 - **No level cap.** The curve keeps rising (time per level grows ~L²: ~70 min at L50, ~3.6 h at L100), which acts as a natural soft cap.
 - **Level-gap modifier on EXP and scrap** (full within ±5, bonus for higher mobs, down to 10% for far-lower mobs). **Chip drop chance is NOT reduced by level gap** (farming a specific monster for its chip is the core loop).
 - **Economy:** faucets ≈ 1.1–1.3 × sinks per tier; every sink scales with level.

@@ -39,9 +39,11 @@ static func roll_rarity(rarity_bonus: float) -> int:
 	return Rarity.COMMON
 
 
-static func roll(data: EnemyData) -> Array[Dictionary]:
+## scrap: amount from Economy.kill_scrap (level, rank, level gap, boss share), computed by the enemy.
+static func roll(data: EnemyData, scrap: int) -> Array[Dictionary]:
 	var drops: Array[Dictionary] = []
-	drops.append({"kind": "scrap", "amount": randi_range(data.scrap_min, data.scrap_max)})
+	if scrap > 0:
+		drops.append({"kind": "scrap", "amount": scrap})
 	for i in data.item_rolls:
 		if randf() < data.item_chance:
 			drops.append(ItemDB.make_random_part(roll_rarity(data.rarity_bonus)))
@@ -52,6 +54,6 @@ static func roll(data: EnemyData) -> Array[Dictionary]:
 	return drops
 
 
-static func drop(world: Node, pos: Vector3, data: EnemyData) -> void:
-	for item in roll(data):
+static func drop(world: Node, pos: Vector3, data: EnemyData, scrap: int) -> void:
+	for item in roll(data, scrap):
 		Pickup.spawn(world, pos, item)

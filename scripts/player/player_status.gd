@@ -11,6 +11,8 @@ extends Node
 
 signal destroyed
 signal respawned
+signal leveled_up(new_level: int)
+signal exp_gained(amount: int)
 
 @export var max_hp: float = 600.0
 @export var armor_type: DamageTypes.Armor = DamageTypes.Armor.LIGHT
@@ -28,6 +30,11 @@ var equipment: Equipment
 ## Set by Equipment: 0..1 damage reduction (Armor), HP/s field repair (Module).
 var damage_reduction: float = 0.0
 var repair_rate: float = 0.0
+## Driver level + EXP (Phase 4 step 4). No level cap. Levels don't give stats yet.
+var level: int = 1
+var exp_points: int = 0
+
+const Econ := preload("res://scripts/loot/economy.gd")
 
 var _car: CarController
 var _hud: PlayerHUD
@@ -83,6 +90,73 @@ func take_damage(amount: float, at: Vector3, damage_type: int) -> void:
 	health.take_damage(amount * mult * (1.0 - clampf(damage_reduction, 0.0, 0.9)), at, mult)
 	_since_hit = 0.0
 	_hud.flash_damage(clampf(amount / 60.0, 0.25, 1.0))
+
+
+func exp_to_next() -> int:
+	return Econ.exp_to_next(level)
+
+
+## EXP from kills. Can level up several times at once (boss); one banner + ring at the end.
+## Level-up = full repair (research LEVELS_EXP_FEEL.md §1).
+func add_exp(amount: int) -> void:
+	if amount <= 0:
+		return
+	exp_points += amount
+	exp_gained.emit(amount)
+	var gained := 0
+	while exp_points >= exp_to_next():
+		exp_points -= exp_to_next()
+		level += 1
+		gained += 1
+	if gained > 0:
+		_on_level_up()
+
+
+func debug_level_up() -> void:
+	exp_points = 0
+	level += 1
+	_on_level_up()
+
+
+func _on_level_up() -> void:
+	if health.is_alive():
+		health.reset()
+	_hud.show_level_up(level)
+	_level_ring()
+	get_tree().call_group("enemies", "refresh_con")
+	leveled_up.emit(level)
+
+
+## Gold ring that expands on the ground around the car + a short light flash.
+func _level_ring() -> void:
+	var world := _car.get_parent()
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1.0, 0.8, 0.25, 0.9)
+	var ring := TorusMesh.new()
+	ring.inner_radius = 0.85
+	ring.outer_radius = 1.0
+	ring.rings = 48
+	ring.ring_segments = 4
+	var mi := MeshInstance3D.new()
+	mi.mesh = ring
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	world.add_child(mi)
+	mi.global_position = _car.global_position + Vector3.UP * 0.15
+	mi.scale = Vector3(2.0, 0.3, 2.0)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.8, 0.3)
+	light.omni_range = 12.0
+	light.light_energy = 3.0
+	mi.add_child(light)
+	var tw := mi.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(mi, "scale", Vector3(14.0, 0.3, 14.0), 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.9)
+	tw.tween_property(light, "light_energy", 0.0, 0.9)
+	tw.chain().tween_callback(mi.queue_free)
 
 
 func heal_full() -> void:
